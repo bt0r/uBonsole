@@ -26,7 +26,9 @@ while :; do
   case $(cat "$BAT/status" 2>/dev/null) in
     Charging) STATE=$L_CHARGING ;; Discharging) STATE=$L_DISCHARGING ;; Full) STATE=$L_FULL ;; *) STATE="?" ;;
   esac
-  WATTS=$(awk '{ printf "%.2f W", $1 / 1000000 }' "$BAT/power_now" 2>/dev/null)
+  # power_now reads 0 on the uConsole (axp20x): use voltage x |current| (µV x µA)
+  WATTS=$(paste "$BAT/voltage_now" "$BAT/current_now" 2>/dev/null \
+    | awk '{ i = $2 < 0 ? -$2 : $2; printf "%.2f W", $1 * i / 1e12 }')
   MSG="$L_BATTERY $(cat "$BAT/capacity" 2>/dev/null)% · $STATE · $WATTS"
 
   LINES=("Wi-Fi       $(onoff "$WIFI")" "Bluetooth   $(onoff "$BT")")

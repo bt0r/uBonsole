@@ -6,6 +6,20 @@ HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails).
 
 The interface is available in **English, French, German and Spanish**: pick the language at install time.
 
+## Screenshots
+
+**SDR frequency cheat sheet** — click the antenna icon in the bar
+
+![SDR frequency cheat sheet](docs/screenshots/frequencies.png)
+
+**Radio app launcher** — click the ear icon
+
+![Radio app launcher](docs/screenshots/radio-launcher.png)
+
+**Power menu** — click the battery
+
+![Power menu](docs/screenshots/power-menu.png)
+
 ## Features
 
 **Status bar** (i3bar + i3blocks), left to right:
