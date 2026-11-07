@@ -1,0 +1,32 @@
+<b>SDR-FREQUENZEN — FRANKREICH / EUROPA</b>
+
+<b>RUNDFUNK</b>                                                                <b>GEDULDETES MITHÖREN — NICHTS WEITERGEBEN</b>
+148,5 – 283,5 kHz     Langwelle (LW)                  AM                108 – 118 MHz         VOR- / ILS-Funkfeuer
+526,5 – 1606,5 kHz    Mittelwelle (MW)                AM                118 – 137 MHz         Zivilluftfahrt (121,5 Notfall)
+3,95 – 26,1 MHz       Kurzwelle (verstreute Bänder)   AM                131,525 / 131,725     ACARS
+87,5 – 108 MHz        UKW-Radio                       WFM               136,975 MHz           VDL2
+174 – 240 MHz         DAB+ (digital)                  welle.io          156 – 162 MHz         Seefunk UKW (Kanal 16: 156,800)
+                                                                        161,975 / 162,025     AIS (Schiffe)
+<b>AMATEURFUNK</b>
+1,81 – 2,0 MHz        160 m                           LSB / CW          <b>NICHT ABHÖREN (Richtwerte)</b>
+3,5 – 3,8 MHz         80 m                            LSB / CW          40,66 – 40,70 MHz     Babyphones, Fernbedienungen
+7,0 – 7,2 MHz         40 m                            LSB / CW          68 – 87,5 MHz         Betriebsfunk, Militär (VHF-Low)
+14,0 – 14,35 MHz      20 m                            USB / CW          146 – 156 MHz         Betriebsfunk VHF (Verkehr, Rettung)
+21,0 – 21,45 MHz      15 m                            USB / CW          162 – 174 MHz         Betriebsfunk VHF, Zählerfernablesung
+28,0 – 29,7 MHz       10 m                            USB / FM          225 – 380 MHz         Militärluftfahrt UHF
+50 – 52 MHz           6 m                             USB / NFM         380 – 400 MHz         Polizei, Feuerwehr, Rettung (TETRA)
+144,05 – 144,4 MHz    2 m CW / SSB                    USB / CW          410 – 430 MHz         Betriebsfunk UHF, private TETRA-Netze
+144,800 MHz           APRS                            NFM → direwolf    440 – 446 MHz         Betriebsfunk UHF (Sicherheit, Bau)
+145,2 – 145,8 MHz     2 m FM, Relais (145,6+)         NFM               446,2 – 470 MHz       Betriebsfunk UHF, Nahverkehr
+145,800 MHz           ISS (Sprache, SSTV)             NFM               466,0 – 466,25 MHz    e*Message-Pager (POCSAG)
+430 – 440 MHz         70 cm (Relais, Satelliten)      NFM / USB         703 – 862 MHz         Mobilfunk 4G / 5G (700, 800)
+1240 – 1300 MHz       23 cm                           NFM / USB         876 – 960 MHz         Mobilfunk 900, GSM-R (Bahn)
+                                                                        1710 – 1880 MHz       Mobilfunk 4G (1800)
+<b>HOBBY / SONSTIGES</b>                                                       1880 – 1900 MHz       DECT-Schnurlostelefone
+26,965 – 27,405 MHz   CB (Kanal 19: 27,185)           AM / FM
+137,1 / 137,9 MHz     Meteor-M Wettersatelliten       → SatDump                               Jede private oder verschlüsselte Kommunikation
+400 – 406 MHz         Wetter-Radiosonden              → auto_rx
+433,92 MHz            ISM-Sensoren (Wetter, Fernbed.) → rtl_433
+446,0 – 446,2 MHz     PMR446 (Funkgeräte, 16 Kanäle)  NFM
+868 / 869,525 MHz     LoRa / Meshtastic               digital
+1090 MHz              ADS-B (Flugzeuge)               → tar1090

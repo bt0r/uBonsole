@@ -1,0 +1,15 @@
+#!/bin/bash
+# i3blocks: volume. Left click = mute, wheel = +/- 5 %
+. ~/.config/i3/scripts/i18n.sh
+SINK=@DEFAULT_AUDIO_SINK@
+case $BLOCK_BUTTON in
+  1) wpctl set-mute "$SINK" toggle ;;
+  4) wpctl set-volume -l 1.0 "$SINK" 5%+ ;;
+  5) wpctl set-volume "$SINK" 5%- ;;
+esac
+read -r _ VOL MUTED <<< "$(wpctl get-volume "$SINK")"
+V=$(awk -v v="$VOL" 'BEGIN { printf "%d", v * 100 + 0.5 }')
+# FontAwesome icons: muted / low / high
+if [ "$MUTED" = "[MUTED]" ]; then echo $''" $L_MUTE"
+elif [ "$V" -lt 50 ]; then echo $''" $V%"
+else echo $''" $V%"; fi

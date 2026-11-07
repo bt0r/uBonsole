@@ -1,0 +1,4 @@
+#!/bin/bash
+# i3blocks: used RAM (%)
+P=$(awk '/^MemTotal:/ { t = $2 } /^MemAvailable:/ { a = $2 } END { printf "%d", (t - a) * 100 / t + 0.5 }' /proc/meminfo)
+echo $''" $P%"

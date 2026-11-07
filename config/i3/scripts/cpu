@@ -1,0 +1,11 @@
+#!/bin/bash
+# i3blocks: CPU load (%) since the previous run
+STATE=/tmp/i3blocks-cpu.$USER
+read -r _ u n s i w x y z _ < /proc/stat
+T=$((u + n + s + i + w + x + y + z)); I=$((i + w))
+if [ -f "$STATE" ]; then read -r PT PI < "$STATE"; else PT=0; PI=0; fi
+echo "$T $I" > "$STATE"
+DT=$((T - PT)); DI=$((I - PI))
+[ "$DT" -gt 0 ] && P=$(( (100 * (DT - DI) + DT / 2) / DT )) || P=0
+# Fixed 2-digit width (monospace font): the bar no longer shifts between 9 and 10 %
+printf '%s %2d%%\n' $'' "$P"

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Opens tar1090 in a dedicated Firefox instance (X class "tar1090" -> workspace 4)
+PROFILE="$HOME/.local/share/firefox-tar1090"
+if pgrep -f -- "--profile $PROFILE" >/dev/null; then
+  exec i3-msg -q '[class="^tar1090$"] focus'
+fi
+mkdir -p "$PROFILE"
+setsid -f firefox --new-instance --profile "$PROFILE" --class tar1090 --name tar1090 http://localhost/tar1090 >/dev/null 2>&1

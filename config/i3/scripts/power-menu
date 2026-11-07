@@ -1,0 +1,50 @@
+#!/bin/bash
+# Power menu: state of each module, Enter toggles it, Escape closes.
+# GPS / LoRa / SDR / USB rails use aiov2_ctl (HackerGadgets AIO v2 board).
+. ~/.config/i3/scripts/i18n.sh
+AIO=(python3 "$AIOV2_CTL")
+RFKILL=/usr/sbin/rfkill
+pkill -f "rofi -dmenu -p power" && exit 0
+
+THEME=(-theme "$ROFI_THEME" -theme-str 'window { location: northeast; anchor: northeast; x-offset: -8px; y-offset: 32px; width: 460px; } listview { lines: 6; }')
+
+onoff() { [ "$1" = 1 ] && echo "ON " || echo "OFF"; }
+rf_on() { "$RFKILL" -n -o SOFT list "$1" | grep -q unblocked && echo 1 || echo 0; }
+rf_set() { "$RFKILL" "$2" "$1" 2>/dev/null || sudo -n "$RFKILL" "$2" "$1"; }
+
+ROW=0
+while :; do
+  WIFI=$([ "$(nmcli radio wifi)" = enabled ] && echo 1 || echo 0)
+  BT=$(rf_on bluetooth)
+  declare -A AIOST=()
+  if [ -f "$AIOV2_CTL" ]; then
+    while IFS=': ' read -r k v; do AIOST[$k]=$([ "$v" = ON ] && echo 1 || echo 0); done \
+      < <("${AIO[@]}" 2>/dev/null | grep -E '^(GPS|LORA|SDR|USB):')
+  fi
+
+  BAT=/sys/class/power_supply/axp20x-battery
+  case $(cat "$BAT/status" 2>/dev/null) in
+    Charging) STATE=$L_CHARGING ;; Discharging) STATE=$L_DISCHARGING ;; Full) STATE=$L_FULL ;; *) STATE="?" ;;
+  esac
+  WATTS=$(awk '{ printf "%.2f W", $1 / 1000000 }' "$BAT/power_now" 2>/dev/null)
+  MSG="$L_BATTERY $(cat "$BAT/capacity" 2>/dev/null)% · $STATE · $WATTS"
+
+  LINES=("Wi-Fi       $(onoff "$WIFI")" "Bluetooth   $(onoff "$BT")")
+  [ -f "$AIOV2_CTL" ] && LINES+=(
+    "GPS         $(onoff "${AIOST[GPS]}")" "LoRa        $(onoff "${AIOST[LORA]}")"
+    "SDR         $(onoff "${AIOST[SDR]}")" "USB         $(onoff "${AIOST[USB]}")")
+
+  CHOICE=$(printf '%s\n' "${LINES[@]}" \
+    | rofi -dmenu -p power -no-custom -format i -selected-row "$ROW" -mesg "$MSG" "${THEME[@]}")
+  [ -z "$CHOICE" ] && break
+  ROW=$CHOICE
+  case $CHOICE in
+    0) nmcli radio wifi "$([ "$WIFI" = 1 ] && echo off || echo on)" ;;
+    1) rf_set bluetooth "$([ "$BT" = 1 ] && echo block || echo unblock)" ;;
+    2|3|4|5)
+      F=(GPS LORA SDR USB); F=${F[$((CHOICE - 2))]}
+      "${AIO[@]}" "$F" "$([ "${AIOST[$F]}" = 1 ] && echo off || echo on)" >/dev/null 2>&1 ;;
+  esac
+  sleep 0.3
+done
+pkill -RTMIN+12 i3blocks

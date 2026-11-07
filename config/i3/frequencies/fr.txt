@@ -1,0 +1,32 @@
+<b>FRÉQUENCES SDR — FRANCE / EUROPE</b>
+
+<b>RADIODIFFUSION</b>                                                          <b>ÉCOUTE TOLÉRÉE — NE RIEN DIVULGUER</b>
+148,5 – 283,5 kHz     Grandes ondes (GO)              AM                108 – 118 MHz         Balises VOR / ILS
+526,5 – 1606,5 kHz    Petites ondes (PO)              AM                118 – 137 MHz         Aviation civile (121,5 urgence)
+3,95 – 26,1 MHz       Ondes courtes (bandes éparses)  AM                131,525 / 131,725     ACARS
+87,5 – 108 MHz        Radio FM                        WFM               136,975 MHz           VDL2
+174 – 240 MHz         DAB+ (numérique)                welle.io          156 – 162 MHz         VHF marine (canal 16 : 156,800)
+                                                                        161,975 / 162,025     AIS (navires)
+<b>RADIOAMATEUR</b>
+1,81 – 2,0 MHz        160 m                           LSB / CW          <b>À NE PAS ÉCOUTER (plages indicatives)</b>
+3,5 – 3,8 MHz         80 m                            LSB / CW          40,66 – 40,70 MHz     Babyphones, télécommandes
+7,0 – 7,2 MHz         40 m                            LSB / CW          68 – 87,5 MHz         Radiocom pro, défense (VHF basse)
+14,0 – 14,35 MHz      20 m                            USB / CW          146 – 156 MHz         Radiocom pro VHF (transports, ambulances)
+21,0 – 21,45 MHz      15 m                            USB / CW          162 – 174 MHz         Radiocom pro VHF, télérelevé compteurs
+28,0 – 29,7 MHz       10 m                            USB / FM          225 – 380 MHz         Aviation militaire UHF
+50 – 52 MHz           6 m                             USB / NFM         380 – 400 MHz         Police, gendarmerie, pompiers, SAMU (INPT)
+144,05 – 144,4 MHz    2 m CW / SSB                    USB / CW          410 – 430 MHz         Radiocom pro UHF, réseaux privés TETRA
+144,800 MHz           APRS                            NFM → direwolf    440 – 446 MHz         Radiocom pro UHF (sécurité, BTP)
+145,2 – 145,8 MHz     2 m FM, relais (145,6+)         NFM               446,2 – 470 MHz       Radiocom pro UHF, transports urbains
+145,800 MHz           ISS (phonie, SSTV)              NFM               466,0 – 466,25 MHz    Pagers e*Message (POCSAG)
+430 – 440 MHz         70 cm (relais, satellites)      NFM / USB         703 – 862 MHz         Téléphonie mobile 4G / 5G (700, 800)
+1240 – 1300 MHz       23 cm                           NFM / USB         876 – 960 MHz         Téléphonie mobile 900, GSM-R (SNCF)
+                                                                        1710 – 1880 MHz       Téléphonie mobile 4G (1800)
+<b>LOISIRS / DIVERS</b>                                                        1880 – 1900 MHz       Téléphones sans fil DECT
+26,965 – 27,405 MHz   CB (canal 19 : 27,185)          AM / FM
+137,1 / 137,9 MHz     Satellites météo Meteor-M       → SatDump                               Toute correspondance privée ou chiffrée
+400 – 406 MHz         Radiosondes météo               → auto_rx
+433,92 MHz            Capteurs ISM (météo, télécom.)  → rtl_433
+446,0 – 446,2 MHz     PMR446 (talkies, 16 canaux)     NFM
+868 / 869,525 MHz     LoRa / Meshtastic               numérique
+1090 MHz              ADS-B (avions)                  → tar1090

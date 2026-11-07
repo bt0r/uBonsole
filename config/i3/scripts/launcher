@@ -1,0 +1,5 @@
+#!/bin/bash
+# App launcher ($mod+d): pink-on-black rofi, larger text
+exec rofi -show run \
+  -theme "$HOME/.config/i3/scripts/rofi-pink.rasi" \
+  -theme-str '* { font: "DejaVu Sans Mono 14"; } window { location: center; anchor: center; width: 640px; } mainbox { children: [ inputbar, listview ]; } listview { lines: 8; }'

@@ -1,0 +1,183 @@
+# uBonsole — i3 config for the ClockworkPi uConsole
+# i3 config file (v4) — reference: https://i3wm.org/docs/userguide.html
+
+# --- Display ---------------------------------------------------------------
+# The uConsole panel is mounted in portrait: rotate it to landscape
+exec --no-startup-id xrandr --output DSI-1 --rotate right
+exec_always --no-startup-id feh --bg-scale ~/.config/i3/wallpapers/ubonsole-night.jpg
+exec --no-startup-id xrdb -merge ~/.Xresources
+exec --no-startup-id setxkbmap us
+
+# Compositor disabled on purpose (no config, saves CPU/battery)
+# exec --no-startup-id picom
+
+# --- Basics ----------------------------------------------------------------
+set $mod Mod1
+font pango:DejaVu Sans Mono 16
+floating_modifier $mod
+
+bindsym $mod+Return exec st
+bindsym $mod+Shift+q kill
+# App launcher (themed rofi)
+bindsym $mod+d exec --no-startup-id ~/.config/i3/scripts/launcher
+
+default_border pixel 1
+default_floating_border pixel 1
+for_window [class="^.*"] border pixel 1
+hide_edge_borders both
+
+# --- Focus / move ----------------------------------------------------------
+bindsym $mod+j focus left
+bindsym $mod+k focus down
+bindsym $mod+l focus up
+bindsym $mod+semicolon focus right
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+bindsym $mod+Shift+j move left
+bindsym $mod+Shift+k move down
+bindsym $mod+Shift+l move up
+bindsym $mod+Shift+semicolon move right
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# --- Layout ----------------------------------------------------------------
+bindsym $mod+h split h
+bindsym $mod+v split v
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# Snap a floating window to the left / right half
+bindsym $mod+Shift+p floating enable; border none; resize set 695px 267px; sticky disable; move window to position 709 px 230 px
+bindsym $mod+Shift+m floating enable; border none; resize set 695px 267px; sticky disable; move window to position 3 px 230 px
+
+# --- Screenshots (files in ~/Pictures, or clipboard with Ctrl) ---------------
+bindsym Print exec --no-startup-id maim --format=png "$HOME/Pictures/screenshot-$(date -u +'%Y%m%d-%H%M%SZ')-all.png"
+bindsym $mod+Print exec --no-startup-id maim --format=png --window $(xdotool getactivewindow) "$HOME/Pictures/screenshot-$(date -u +'%Y%m%d-%H%M%SZ')-current.png"
+bindsym Shift+Print exec --no-startup-id maim --format=png --select "$HOME/Pictures/screenshot-$(date -u +'%Y%m%d-%H%M%SZ')-selected.png"
+bindsym Ctrl+Print exec --no-startup-id maim --format=png | xclip -selection clipboard -t image/png
+bindsym Ctrl+$mod+Print exec --no-startup-id maim --format=png --window $(xdotool getactivewindow) | xclip -selection clipboard -t image/png
+bindsym Ctrl+Shift+Print exec --no-startup-id maim --format=png --select | xclip -selection clipboard -t image/png
+
+# --- Volume / brightness (also refresh the bar blocks) ----------------------
+bindsym XF86AudioRaiseVolume exec --no-startup-id wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ && pkill -RTMIN+10 i3blocks
+bindsym XF86AudioLowerVolume exec --no-startup-id wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && pkill -RTMIN+10 i3blocks
+bindsym XF86AudioMute        exec --no-startup-id wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && pkill -RTMIN+10 i3blocks
+# $mod + , (down) and $mod + . (up)
+bindcode $mod+59 exec --no-startup-id brightnessctl set 1- && pkill -RTMIN+11 i3blocks
+bindcode $mod+60 exec --no-startup-id brightnessctl set 1+ && pkill -RTMIN+11 i3blocks
+
+# --- Workspaces: 1 terminal, 2 web, 3 radio, 4 ADS-B -----------------------
+set $ws1 "1: "
+set $ws2 "2: "
+set $ws3 "3: "
+set $ws4 "4: "
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+bindsym $mod+Home workspace $ws1
+bindsym $mod+End workspace $ws10
+bindsym $mod+Prior workspace prev
+bindsym $mod+Next workspace next
+
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+6 workspace $ws6
+bindsym $mod+7 workspace $ws7
+bindsym $mod+8 workspace $ws8
+bindsym $mod+9 workspace $ws9
+bindsym $mod+0 workspace $ws10
+
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5
+bindsym $mod+Shift+6 move container to workspace $ws6
+bindsym $mod+Shift+7 move container to workspace $ws7
+bindsym $mod+Shift+8 move container to workspace $ws8
+bindsym $mod+Shift+9 move container to workspace $ws9
+bindsym $mod+Shift+0 move container to workspace $ws10
+
+# --- Window placement ------------------------------------------------------
+assign [class="chrome"] $ws2
+assign [class="(?i)^firefox$"] $ws2
+
+# Radio apps and text-mode decoders -> workspace 3
+assign [class="(?i)gqrx"] $ws3
+assign [class="(?i)sdr\+\+|sdrpp"] $ws3
+assign [class="(?i)satdump"] $ws3
+assign [class="^sdr-term$"] $ws3
+
+# ADS-B: dedicated Firefox instance (X class "tar1090") + its terminal -> workspace 4
+assign [class="^tar1090$"] $ws4
+assign [class="^adsb-term$"] $ws4
+
+assign [class="vlc"] $ws5
+assign [class="Thunar"] $ws6
+for_window [class="Gimp"] floating enable
+
+# --- Session ---------------------------------------------------------------
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+
+mode "resize" {
+        bindsym j resize shrink width 10 px or 10 ppt
+        bindsym k resize grow height 10 px or 10 ppt
+        bindsym l resize shrink height 10 px or 10 ppt
+        bindsym semicolon resize grow width 10 px or 10 ppt
+        bindsym Left resize shrink width 10 px or 10 ppt
+        bindsym Down resize grow height 10 px or 10 ppt
+        bindsym Up resize shrink height 10 px or 10 ppt
+        bindsym Right resize grow width 10 px or 10 ppt
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+bindsym $mod+r mode "resize"
+
+# --- Colors: wallpaper pink on black ---------------------------------------
+set $bg-color            #262d38
+set $inactive-bg-color   #262d38
+set $text-color          #f3f4f5
+set $inactive-text-color #676E7D
+set $urgent-bg-color     #E53935
+
+#                       border              background          text                 indicator
+client.focused          $bg-color           $bg-color           $text-color          #E09AB4
+client.unfocused        $inactive-bg-color  $inactive-bg-color  $inactive-text-color #E09AB4
+client.focused_inactive $inactive-bg-color  $inactive-bg-color  $inactive-text-color #E09AB4
+client.urgent           $urgent-bg-color    $urgent-bg-color    $text-color          #E09AB4
+
+bar {
+        status_command i3blocks -c ~/.config/i3/i3blocks.conf
+        position top
+        font pango:DejaVu Sans Mono, FontAwesome 14
+        colors {
+                background #000000
+                statusline #E09AB4
+                separator  #8A5A6E
+                #                  border  background text
+                focused_workspace  #E09AB4 #000000    #E09AB4
+                active_workspace   #8A5A6E #000000    #E09AB4
+                inactive_workspace #000000 #000000    #E09AB4
+                urgent_workspace   #E53935 #000000    #E09AB4
+                binding_mode       #E09AB4 #000000    #E09AB4
+        }
+}

@@ -1,0 +1,31 @@
+#!/bin/bash
+# i3blocks: battery. Icon follows the level, red below 15 %, one-shot warning at 10 %.
+# Click = power menu
+. ~/.config/i3/scripts/i18n.sh
+BAT=/sys/class/power_supply/axp20x-battery
+[ -n "$BLOCK_BUTTON" ] && setsid -f ~/.config/i3/scripts/power-menu >/dev/null 2>&1
+
+CAP=$(cat "$BAT/capacity" 2>/dev/null) || { echo "? bat"; exit 0; }
+STATUS=$(cat "$BAT/status")
+if   [ "$CAP" -ge 90 ]; then ICON=$''
+elif [ "$CAP" -ge 65 ]; then ICON=$''
+elif [ "$CAP" -ge 40 ]; then ICON=$''
+elif [ "$CAP" -ge 15 ]; then ICON=$''
+else ICON=$''; fi
+[ "$STATUS" = "Charging" ] && ICON=$''" $ICON"
+
+echo "$ICON $CAP%"
+echo "$ICON $CAP%"
+
+# Warn once below 10 % (re-armed when charging or above 15 %)
+FLAG=/tmp/i3blocks-lowbat.$USER
+if [ "$STATUS" != "Charging" ] && [ "$CAP" -le 15 ]; then
+  echo "#E53935"
+  if [ "$CAP" -le 10 ] && [ ! -f "$FLAG" ]; then
+    touch "$FLAG"
+    # shellcheck disable=SC2059
+    setsid -f i3-nagbar -t warning -m "$(printf "$L_LOW_BATTERY" "$CAP")" >/dev/null 2>&1
+  fi
+elif [ "$STATUS" = "Charging" ] || [ "$CAP" -gt 15 ]; then
+  rm -f "$FLAG"
+fi

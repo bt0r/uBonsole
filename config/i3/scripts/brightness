@@ -1,0 +1,7 @@
+#!/bin/bash
+# i3blocks: screen brightness. Left click = +1, right click = -1
+case $BLOCK_BUTTON in
+  1) brightnessctl -q set 1+ ;;
+  3) brightnessctl -q set 1- ;;
+esac
+echo "☀ $(( $(brightnessctl get) * 100 / $(brightnessctl max) ))%"
