@@ -1,0 +1,35 @@
+<b>SDR FREQUENCIES — UNITED KINGDOM</b>
+
+<b>BROADCAST</b>                                                                  <b>LEGAL GREY AREA — DISCLOSE NOTHING</b>
+148.5 – 283.5 kHz       Long wave (BBC R4 closed 2026)  AM                 108 – 118 MHz           VOR / ILS beacons
+526.5 – 1606.5 kHz      Medium wave (MW)                AM                 118 – 137 MHz           Civil aviation, AM (121.5 emergency)
+3.95 – 26.1 MHz         Shortwave (scattered bands)     AM                 131.525 – 131.825 MHz   ACARS → acarsdec
+87.5 – 108 MHz          FM radio                        WFM                136.725 – 136.975 MHz   VDL2 → dumpvdl2
+174 – 240 MHz           DAB+ (digital)                  welle.io           156 – 162 MHz           Marine VHF, NFM (ch. 16: 156.800)
+                                                                           161.975 / 162.025 MHz   AIS (ships) → AIS-catcher
+<b>AMATEUR RADIO</b>
+1.81 – 2.0 MHz          160 m                           LSB / CW           <b>DO NOT LISTEN (approximate ranges)</b>
+3.5 – 3.8 MHz           80 m                            LSB / CW           40.66 – 40.70 MHz       Baby monitors, remote controls
+5.2585 – 5.4065 MHz     60 m (segmented)                USB / CW           68 – 87.5 MHz           Professional radio, defence (low VHF)
+7.0 – 7.2 MHz           40 m                            LSB / CW           146 – 156 MHz           Professional VHF (transport, ambulances)
+14.0 – 14.35 MHz        20 m                            USB / CW           162 – 174 MHz           Professional VHF, smart meters
+21.0 – 21.45 MHz        15 m                            USB / CW           225 – 380 MHz           Military aviation UHF
+28.0 – 29.7 MHz         10 m                            USB / FM           380 – 400 MHz           Police, fire, ambulance (Airwave)
+50 – 52 MHz             6 m                             USB / NFM          410 – 430 MHz           Professional UHF, private TETRA
+70.0 – 70.5 MHz         4 m                             FM / USB           440 – 446 MHz           Professional UHF (security, construction)
+144.05 – 144.4 MHz      2 m CW / SSB (call 144.300)     USB / CW           446.2 – 470 MHz         Professional UHF, public transport
+144.800 MHz             APRS                            NFM → direwolf     703 – 862 MHz           Mobile network 4G / 5G (700, 800)
+145.2 – 145.8 MHz       2 m FM, repeaters (145.6+)      NFM                876 – 960 MHz           Mobile network 900, GSM-R (railways)
+145.800 MHz             ISS (voice, SSTV)               NFM                1710 – 1880 MHz         Mobile network 4G (1800)
+430 – 440 MHz           70 cm (repeaters, satellites)   NFM / USB          1880 – 1900 MHz         DECT cordless phones
+1240 – 1300 MHz         23 cm                           NFM / USB
+                                                                           Any private or encrypted communication
+<b>HOBBY / MISC</b>                                                               <i>UK: intercepting messages not meant for you is an offence</i>
+27.60125 – 27.99125 MHz UK CB, 40 ch. (19: 27.78125)    FM
+26.965 – 27.405 MHz     CB, CEPT 40 ch.                 FM / AM
+137.1 / 137.9 MHz       Meteor-M weather satellites     → SatDump
+400 – 406 MHz           Weather radiosondes             → auto_rx
+433.92 MHz              ISM sensors (weather, remotes)  → rtl_433
+446.0 – 446.2 MHz       PMR446 (walkie-talkies, 16 ch.) NFM
+868 / 869.525 MHz       LoRa / Meshtastic               digital
+1090 MHz                ADS-B (aircraft)                → tar1090

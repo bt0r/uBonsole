@@ -8,4 +8,4 @@ echo "$T $I" > "$STATE"
 DT=$((T - PT)); DI=$((I - PI))
 [ "$DT" -gt 0 ] && P=$(( (100 * (DT - DI) + DT / 2) / DT )) || P=0
 # Fixed 2-digit width (monospace font): the bar no longer shifts between 9 and 10 %
-printf '%s %2d%%\n' $'' "$P"
+printf '%s %2d%%\n' $'\uf0e4' "$P"

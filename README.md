@@ -4,11 +4,13 @@ An i3 setup for the **ClockworkPi uConsole** (CM4) built around software-defined
 status bar, a one-click radio app launcher, an SDR frequency cheat sheet and a power menu for the
 HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails).
 
-The interface is available in **English, French, German and Spanish**: pick the language at install time.
+The interface is available in **English, French, German and Spanish**, and the frequency cheat sheet
+is tailored to where you use the device: **France, United Kingdom, Germany, Spain, USA, Canada** or
+generic **Europe (ITU Region 1)**. Pick both at install time.
 
 ## Screenshots
 
-**SDR frequency cheat sheet** — click the antenna icon in the bar
+**SDR frequency cheat sheet** (USA region) — click the antenna icon in the bar
 
 ![SDR frequency cheat sheet](docs/screenshots/frequencies.png)
 
@@ -26,7 +28,7 @@ The interface is available in **English, French, German and Spanish**: pick the 
 
 | Block | Display | Click |
 |---|---|---|
-| Radio | antenna icon | SDR frequency cheat sheet: broadcast, amateur radio, hobby bands, tolerated and forbidden ranges, with the mode to use |
+| Radio | antenna icon | SDR frequency cheat sheet for your region: broadcast, amateur radio, hobby bands, what you may and may not listen to, with the mode to use |
 | Ear | running SDR app (`ADS-B`, `GQRX`…) | radio app launcher |
 | Brightness | `☀ 22%` | left +1 / right −1 |
 | Volume | speaker icon follows the level | left = mute, wheel = ±5 % |
@@ -56,13 +58,14 @@ cd uBonsole
 ./install.sh
 ```
 
-The installer asks for the language, offers to install missing packages, backs up your current
+The installer asks for the language and the region, offers to install missing packages, backs up your current
 `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config and restarts i3. It can also apply
 the Qt6 theme and install the SDR tools.
 
-Non-interactive: `./install.sh --lang de --qt-theme --yes`
+Non-interactive: `./install.sh --lang en --region us --qt-theme --yes`
 
-Change the language later in `~/.config/i3/ubonsole.conf` (`UBONSOLE_LANG=en|fr|de|es`).
+Change them later in `~/.config/i3/ubonsole.conf`:
+`UBONSOLE_LANG=en|fr|de|es` and `UBONSOLE_REGION=fr|uk|de|es|us|ca|eu`.
 
 ### Requirements
 
@@ -79,7 +82,7 @@ config/i3/config              i3 config
 config/i3/i3blocks.conf       status bar blocks
 config/i3/scripts/            block scripts, menus, launcher, rofi theme
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
-config/i3/frequencies/        frequency cheat sheets, generated
+config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper
 config/qt6ct/colors/          Qt6 palette
 config/direwolf/sdr.conf      direwolf receive-only config for APRS
@@ -90,12 +93,18 @@ tools/install-sdr-tools.sh    SDR tools installer
 ## Adding a language
 
 1. Copy `config/i3/lang/en.sh` to `config/i3/lang/<code>.sh` and translate the strings.
-2. Add the language to the tables in `tools/gen-frequencies.py` and run it.
+2. Add the language to `tr()` and every table in `tools/gen-frequencies.py`, then run it.
 3. Add the code to `LANGS` / `LANG_NAMES` in `install.sh`.
+
+## Adding a region
+
+Add an entry to `REGIONS` and `TITLE` in `tools/gen-frequencies.py`, run it (it reports any line
+that does not fit the screen), then add the code to `REGIONS` / `REGION_NAMES` in `install.sh`.
 
 ## Notes
 
-- The frequency ranges follow the ITU/IARU Region 1 band plans and French allocations. The
-  "do not listen" ranges are indicative blocks, not an official list. Check your local regulations.
+- Ranges follow the ITU Region 1 / Region 2 band plans and national allocations (ARCEP, Ofcom,
+  BNetzA, CNAF, FCC, ISED), checked in 2026. "Do not listen" ranges are indicative blocks, not an
+  official list, and the law differs between countries: check your local regulations.
 - Based on the community config [dzaczek/Uconsole-i3](https://github.com/dzaczek/Uconsole-i3)
   and the default i3 config.

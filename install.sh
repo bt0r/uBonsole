@@ -2,10 +2,11 @@
 # uBonsole installer — i3 setup for the ClockworkPi uConsole
 #
 #   ./install.sh                       interactive
-#   ./install.sh --lang fr --yes       non-interactive (French UI, default answers)
+#   ./install.sh --lang fr --region fr --yes    non-interactive (French UI, France frequencies)
 #
 # Options:
 #   --lang en|fr|de|es   interface language (bar menus + frequency cheat sheet)
+#   --region CODE        frequency cheat sheet region: fr uk de es us ca eu (eu = other Europe)
 #   --qt-theme           also apply the pink/black Qt6 theme (qt6ct)
 #   --sdr-tools          also install the SDR tools (tools/install-sdr-tools.sh)
 #   --yes                do not ask questions (keeps defaults for unset options)
@@ -15,15 +16,18 @@ REPO=$(cd "$(dirname "$0")" && pwd)
 I3_DIR="$HOME/.config/i3"
 LANGS=(en fr de es)
 LANG_NAMES=(English Français Deutsch Español)
+REGIONS=(fr uk de es us ca eu)
+REGION_NAMES=(France "United Kingdom" Germany Spain USA Canada "Other Europe (generic ITU Region 1)")
 
-UB_LANG="" QT_THEME="" SDR_TOOLS="" YES=0
+UB_LANG="" UB_REGION="" QT_THEME="" SDR_TOOLS="" YES=0
 while [ $# -gt 0 ]; do
   case $1 in
     --lang) UB_LANG=${2:-}; shift ;;
+    --region) UB_REGION=${2:-}; shift ;;
     --qt-theme) QT_THEME=1 ;;
     --sdr-tools) SDR_TOOLS=1 ;;
     --yes|-y) YES=1 ;;
-    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
   shift
@@ -54,6 +58,27 @@ if [ -z "$UB_LANG" ]; then
 fi
 [[ " ${LANGS[*]} " == *" $UB_LANG "* ]] || { echo "Unsupported language: $UB_LANG (en, fr, de, es)" >&2; exit 1; }
 say "Language: $UB_LANG"
+
+# --- Region (frequency cheat sheet) -------------------------------------------
+# Band plans and rules differ by country: pick where the device is used
+if [ -z "$UB_REGION" ]; then
+  case $UB_LANG in fr|de|es) DEF=$UB_LANG ;; *) DEF=eu ;; esac
+  if [ "$YES" = 1 ]; then
+    UB_REGION=$DEF
+  else
+    echo "Region for the SDR frequency cheat sheet:"
+    for i in "${!REGIONS[@]}"; do
+      echo "  $((i + 1))) ${REGION_NAMES[$i]} (${REGIONS[$i]})"
+      [ "${REGIONS[$i]}" = "$DEF" ] && DEFN=$((i + 1))
+    done
+    read -rp "Choice [$DEFN]: " n
+    n=${n:-$DEFN}
+    [[ $n =~ ^[1-7]$ ]] || { echo "Invalid choice" >&2; exit 1; }
+    UB_REGION=${REGIONS[$((n - 1))]}
+  fi
+fi
+[[ " ${REGIONS[*]} " == *" $UB_REGION "* ]] || { echo "Unsupported region: $UB_REGION (${REGIONS[*]})" >&2; exit 1; }
+say "Region: $UB_REGION"
 
 # --- Dependencies -------------------------------------------------------------
 # command -> Debian package
@@ -101,6 +126,8 @@ cat > "$I3_DIR/ubonsole.conf" <<EOF
 # uBonsole settings (read by ~/.config/i3/scripts/i18n.sh)
 # Interface language: en, fr, de, es
 UBONSOLE_LANG=$UB_LANG
+# Frequency cheat sheet region: fr, uk, de, es, us, ca, eu (other Europe)
+UBONSOLE_REGION=$UB_REGION
 # HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails); empty = not available
 AIOV2_CTL=$AIOV2_CTL
 EOF
@@ -137,4 +164,4 @@ if [ -z "$SDR_TOOLS" ] && ask "Install the SDR tools (SDR++, SatDump, direwolf, 
 if pgrep -x i3 >/dev/null && command -v i3-msg >/dev/null; then
   i3-msg -q restart 2>/dev/null && say "i3 restarted"
 fi
-say "Done. Change the language later in $I3_DIR/ubonsole.conf"
+say "Done. Change the language or region later in $I3_DIR/ubonsole.conf"

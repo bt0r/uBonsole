@@ -8,4 +8,4 @@ for p in gqrx:GQRX sdrpp:SDR++ satdump-ui:SatDump rtl_433:433 acarsdec:ACARS dum
   pgrep -x "${p%%:*}" >/dev/null && ACTIVE="${p#*:}"
 done
 pgrep -f auto_rx.py >/dev/null && ACTIVE="$L_ACTIVE_SONDES"
-echo $''"${ACTIVE:+ $ACTIVE}"
+echo $'\uf2a2'"${ACTIVE:+ $ACTIVE}"

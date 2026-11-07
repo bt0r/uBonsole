@@ -7,12 +7,12 @@ BAT=/sys/class/power_supply/axp20x-battery
 
 CAP=$(cat "$BAT/capacity" 2>/dev/null) || { echo "? bat"; exit 0; }
 STATUS=$(cat "$BAT/status")
-if   [ "$CAP" -ge 90 ]; then ICON=$''
-elif [ "$CAP" -ge 65 ]; then ICON=$''
-elif [ "$CAP" -ge 40 ]; then ICON=$''
-elif [ "$CAP" -ge 15 ]; then ICON=$''
-else ICON=$''; fi
-[ "$STATUS" = "Charging" ] && ICON=$''" $ICON"
+if   [ "$CAP" -ge 90 ]; then ICON=$'\uf240'
+elif [ "$CAP" -ge 65 ]; then ICON=$'\uf241'
+elif [ "$CAP" -ge 40 ]; then ICON=$'\uf242'
+elif [ "$CAP" -ge 15 ]; then ICON=$'\uf243'
+else ICON=$'\uf244'; fi
+[ "$STATUS" = "Charging" ] && ICON=$'\uf1e6'" $ICON"
 
 echo "$ICON $CAP%"
 echo "$ICON $CAP%"

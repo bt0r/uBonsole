@@ -1,0 +1,35 @@
+<b>SDR-FREQUENZEN — VEREINIGTES KÖNIGREICH</b>
+
+<b>RUNDFUNK</b>                                                                   <b>RECHTLICHE GRAUZONE — NICHTS WEITERGEBEN</b>
+148,5 – 283,5 kHz       Langwelle (BBC R4 2026 aus)     AM                 108 – 118 MHz           VOR- / ILS-Funkfeuer
+526,5 – 1606,5 kHz      Mittelwelle (MW)                AM                 118 – 137 MHz           Zivilluftfahrt, AM (121,5 Notfall)
+3,95 – 26,1 MHz         Kurzwelle (verstreute Bänder)   AM                 131,525 – 131,825 MHz   ACARS → acarsdec
+87,5 – 108 MHz          UKW-Radio                       WFM                136,725 – 136,975 MHz   VDL2 → dumpvdl2
+174 – 240 MHz           DAB+ (digital)                  welle.io           156 – 162 MHz           Seefunk UKW, NFM (Kanal 16: 156,800)
+                                                                           161,975 / 162,025 MHz   AIS (Schiffe) → AIS-catcher
+<b>AMATEURFUNK</b>
+1,81 – 2,0 MHz          160 m                           LSB / CW           <b>NICHT ABHÖREN (Richtwerte)</b>
+3,5 – 3,8 MHz           80 m                            LSB / CW           40,66 – 40,70 MHz       Babyphones, Fernbedienungen
+5,2585 – 5,4065 MHz     60 m (Segmente)                 USB / CW           68 – 87,5 MHz           Betriebsfunk, Militär (VHF-Low)
+7,0 – 7,2 MHz           40 m                            LSB / CW           146 – 156 MHz           Betriebsfunk VHF (Verkehr, Rettung)
+14,0 – 14,35 MHz        20 m                            USB / CW           162 – 174 MHz           Betriebsfunk VHF, Zählerfernablesung
+21,0 – 21,45 MHz        15 m                            USB / CW           225 – 380 MHz           Militärluftfahrt UHF
+28,0 – 29,7 MHz         10 m                            USB / FM           380 – 400 MHz           Polizei, Feuerwehr, Rettung (Airwave)
+50 – 52 MHz             6 m                             USB / NFM          410 – 430 MHz           Betriebsfunk UHF, private TETRA-Netze
+70,0 – 70,5 MHz         4 m                             FM / USB           440 – 446 MHz           Betriebsfunk UHF (Sicherheit, Bau)
+144,05 – 144,4 MHz      2 m CW / SSB (Anruf 144,300)    USB / CW           446,2 – 470 MHz         Betriebsfunk UHF, Nahverkehr
+144,800 MHz             APRS                            NFM → direwolf     703 – 862 MHz           Mobilfunk 4G / 5G (700, 800)
+145,2 – 145,8 MHz       2 m FM, Relais (145,6+)         NFM                876 – 960 MHz           Mobilfunk 900, GSM-R (Bahn)
+145,800 MHz             ISS (Sprache, SSTV)             NFM                1710 – 1880 MHz         Mobilfunk 4G (1800)
+430 – 440 MHz           70 cm (Relais, Satelliten)      NFM / USB          1880 – 1900 MHz         DECT-Schnurlostelefone
+1240 – 1300 MHz         23 cm                           NFM / USB
+                                                                           Jede private oder verschlüsselte Kommunikation
+<b>HOBBY / SONSTIGES</b>                                                          <i>UK: Abhören fremder Nachrichten ist strafbar (WTA s.48)</i>
+27,60125 – 27,99125 MHz UK-CB, 40 Kan. (19: 27,78125)   FM
+26,965 – 27,405 MHz     CB, CEPT 40 Kanäle              FM / AM
+137,1 / 137,9 MHz       Meteor-M Wettersatelliten       → SatDump
+400 – 406 MHz           Wetter-Radiosonden              → auto_rx
+433,92 MHz              ISM-Sensoren (Wetter, Fernbed.) → rtl_433
+446,0 – 446,2 MHz       PMR446 (Funkgeräte, 16 Kanäle)  NFM
+868 / 869,525 MHz       LoRa / Meshtastic               digital
+1090 MHz                ADS-B (Flugzeuge)               → tar1090

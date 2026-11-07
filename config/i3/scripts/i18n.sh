@@ -3,6 +3,7 @@
 UBONSOLE_DIR="$HOME/.config/i3"
 [ -f "$UBONSOLE_DIR/ubonsole.conf" ] && . "$UBONSOLE_DIR/ubonsole.conf"
 UBONSOLE_LANG=${UBONSOLE_LANG:-en}
+UBONSOLE_REGION=${UBONSOLE_REGION:-eu}
 AIOV2_CTL=${AIOV2_CTL:-$HOME/aiov2_ctl/aiov2_ctl.py}
 . "$UBONSOLE_DIR/lang/en.sh"
 if [ "$UBONSOLE_LANG" != en ] && [ -f "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh" ]; then

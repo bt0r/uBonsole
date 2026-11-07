@@ -1,0 +1,33 @@
+<b>FRÉQUENCES SDR — CANADA</b>
+
+<b>RADIODIFFUSION</b>                                                             <b>ÉCOUTE OK — NE RIEN DIVULGUER NI UTILISER</b>
+530 – 1700 kHz          Radio AM                        AM                 108 – 118 MHz           Balises VOR / ILS
+5,9 – 26,1 MHz          Ondes courtes (bandes éparses)  AM                 118 – 137 MHz           Aviation civile, AM (121,5 urgence)
+88,1 – 107,9 MHz        Radio FM (HD Radio)             WFM                129,125 – 131,725 MHz   ACARS, principal 131,550 → acarsdec
+162,400 – 162,550 MHz   Radiométéo Canada               NFM                136,650 – 136,975 MHz   VDL2 → dumpvdl2
+                                                                           156 – 162 MHz           VHF marine, NFM (canal 16 : 156,800)
+<b>RADIOAMATEUR</b>                                                               161,975 / 162,025 MHz   AIS (navires) → AIS-catcher
+1,8 – 2,0 MHz           160 m                           LSB / CW
+3,5 – 4,0 MHz           80 / 75 m                       LSB / CW           <b>INTERDIT — PROTÉGÉ PAR LA LOI</b>
+5,3305 – 5,4035 MHz     60 m (bande + 4 canaux)         USB / CW           617 – 768 / 776 – 798   Mobile 600 / 700 (4G, 5G)
+7,0 – 7,3 MHz           40 m                            LSB / CW           824 – 849 / 869 – 894   Cellulaire 850 (Code criminel 184.5)
+14,0 – 14,35 MHz        20 m                            USB / CW           929 – 932 MHz           Pagers (contenu des messages)
+21,0 – 21,45 MHz        15 m                            USB / CW           1710 – 2200 MHz         Mobile AWS / PCS (4G, 5G)
+28,0 – 29,7 MHz         10 m                            USB / FM           1920 – 1930 MHz         Téléphones sans fil DECT 6.0
+50 – 54 MHz             6 m                             USB / NFM
+144,1 – 144,275 MHz     2 m CW / SSB (appel 144,200)    USB / CW           Secours chiffrés (P25) : ne pas déchiffrer
+144,390 MHz             APRS                            NFM → direwolf     Toute correspondance privée ou chiffrée
+145,1 – 147,4 MHz       2 m FM, relais (appel 146,52)   NFM                <i>Canada : ne rien divulguer ni utiliser (art. 9)</i>
+145,800 MHz             ISS (phonie, SSTV)              NFM
+219 – 225 MHz           1,25 m (219–220, 222–225)       NFM
+430 – 450 MHz           70 cm (relais, satellites)      NFM / USB
+1240 – 1300 MHz         23 cm                           NFM / USB
+
+<b>LOISIRS / DIVERS</b>
+26,965 – 27,405 MHz     CB (9 urgence, 19 routiers)     AM / SSB
+462,55 – 467,72 MHz     FRS (talkies sans licence)      NFM
+137,1 / 137,9 MHz       Satellites météo Meteor-M       → SatDump
+400 – 406 MHz           Radiosondes météo               → auto_rx
+315 / 433,92 MHz        Capteurs ISM (météo, télécom.)  → rtl_433
+902 – 928 MHz           LoRa / Meshtastic (906,875)     numérique
+1090 MHz                ADS-B (avions)                  → tar1090
