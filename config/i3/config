@@ -137,7 +137,11 @@ for_window [class="Gimp"] floating enable
 # --- Session ---------------------------------------------------------------
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
-bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+# Session menu (log out, shut down): $mod+Shift+e, or the SELECT button through scripts/gamepad-buttons
+# (gamepad buttons are a joystick device that i3 cannot bind). Fn+Esc is taken by the keyboard
+# firmware, which uses it to lock the keyboard.
+bindsym $mod+Shift+e exec --no-startup-id ~/.config/i3/scripts/session-menu
+exec_always --no-startup-id ~/.config/i3/scripts/gamepad-buttons
 
 mode "resize" {
         bindsym j resize shrink width 10 px or 10 ppt

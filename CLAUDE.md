@@ -25,7 +25,7 @@ which copies `config/` into `~/.config/i3` (and qt6ct / direwolf) and writes `~/
 
 - **type**: `feat` (new feature), `fix` (bug fix), `docs` (documentation only), `style` (formatting,
   no code change), `refactor` (no feature, no fix), `perf`, `test`, `chore` (build, tooling, assets).
-- **scope** (optional, lowercase): `bar`, `radio`, `power`, `launcher`, `freq`, `i18n`, `theme`,
+- **scope** (optional, lowercase): `bar`, `radio`, `power`, `session`, `launcher`, `freq`, `i18n`, `theme`,
   `install`, `sdr-tools`, `readme`. Use the part of the project the change is about.
 - **subject**: imperative present tense ("add", not "added" / "adds"), lowercase first letter, no
   final period, 72 characters max for the whole first line.

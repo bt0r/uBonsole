@@ -78,6 +78,11 @@ Missing apps are flagged `(not installed)`.
 **Power menu** — shows battery level, state and power draw, and toggles Wi-Fi, Bluetooth and the
 AIO v2 rails (GPS, LoRa, SDR, USB, via [aiov2_ctl](https://github.com/hackergadgets/aiov2_ctl)).
 
+**Session menu** — `$mod+Shift+e` or the **SELECT** button opens a menu to log out or shut down. Both
+ask for confirmation, with "No" preselected. SELECT is ignored while the focused window is fullscreen,
+so games can still use it. (`Fn+Esc`, the padlock key, is handled by the keyboard firmware: it locks
+the keyboard and sends nothing to the system.)
+
 **Workspaces** — 1 terminal, 2 web, 3 radio (GQRX, SDR++, SatDump, decoders), 4 ADS-B
 (tar1090 runs in its own Firefox instance so it always lands on workspace 4).
 
@@ -219,8 +224,10 @@ Reinstalling or updating keeps your values.
 | `$mod+,` / `$mod+.` | brightness down / up |
 | Volume keys | volume, mute |
 | `Print` | screenshot to `~/Pictures` (`$mod+Print`: active window, `Shift+Print`: selection; add `Ctrl` to copy to the clipboard) |
+| `$mod+Shift+e` or SELECT | session menu: log out, shut down |
+| `Fn+Esc` (padlock) | locks / unlocks the keyboard (keyboard firmware) |
 | `$mod+Shift+q` | close window |
-| `$mod+Shift+c` / `$mod+Shift+r` / `$mod+Shift+e` | reload config / restart i3 / quit |
+| `$mod+Shift+c` / `$mod+Shift+r` | reload config / restart i3 |
 
 ## Using the radio apps
 
@@ -240,6 +247,10 @@ Reinstalling or updating keeps your values.
 
 ## Troubleshooting
 
+- **The keyboard stopped responding**: `Fn+Esc` locks it (keyboard firmware); press it again.
+- **SELECT does not open the session menu**: the listener (`scripts/gamepad-buttons`) reads the
+  gamepad input device, so your user must be in the `input` group (`id` lists your groups). It does
+  nothing while a fullscreen window has the focus.
 - **A menu does not open**: rofi runs one window at a time. Close the open one with Escape, or click
   its icon again.
 - **GQRX (or another Qt6 app) is white and hard to read**: run `./install.sh --qt-theme` to apply
@@ -264,7 +275,8 @@ Reinstalling or updating keeps your values.
 ```
 config/i3/config              i3 config
 config/i3/i3blocks.conf       status bar blocks
-config/i3/scripts/            block scripts, menus, launcher, rofi theme (common.sh: settings + helpers)
+config/i3/scripts/            block scripts, menus, launcher, rofi theme (common.sh: settings + helpers,
+                              gamepad-buttons: SELECT button listener)
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
 config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper

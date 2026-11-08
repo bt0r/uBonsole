@@ -1,0 +1,24 @@
+#!/bin/bash
+# Session menu (Fn+Esc on the uConsole): log out or shut down. Both ask for confirmation, with
+# "No" preselected, so an accidental Enter does nothing.
+. ~/.config/i3/scripts/common.sh
+pkill -x rofi && exit 0
+
+THEME=(-theme "$ROFI_THEME")
+GEOM='window { location: center; anchor: center; width: 460px; } listview { lines: 2; }'
+
+menu() { rofi -dmenu -p session -no-custom -format i "${THEME[@]}" "$@"; }
+confirm() {  # confirm "question" -> success only if "Yes" is picked
+  [ "$(printf '%s\n%s\n' "$L_NO" "$L_YES" | menu -mesg "$1" -theme-str "$GEOM")" = 1 ]
+}
+
+CHOICE=$(printf '%s\n' $'\uf08b'"  $L_LOGOUT" $'\uf011'"  $L_SHUTDOWN" \
+  | menu -theme-str "$GEOM mainbox { children: [ listview ]; }")
+case $CHOICE in
+  0) confirm "$L_CONFIRM_LOGOUT" && i3-msg -q exit ;;
+  1) if confirm "$L_CONFIRM_SHUTDOWN"; then
+       # logind allows it from the local session; sudo -n as a fallback (never prompts)
+       systemctl poweroff 2>/dev/null || sudo -n systemctl poweroff 2>/dev/null \
+         || rofi -e "$L_SHUTDOWN: systemctl poweroff failed" "${THEME[@]}"
+     fi ;;
+esac
