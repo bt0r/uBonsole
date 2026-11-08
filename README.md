@@ -222,6 +222,9 @@ Reinstalling or updating keeps your values.
 
 - **One app at a time**: the RTL-SDR dongle can only be opened by one program. The launcher stops
   the running app (and readsb) before starting another; "Stop all" frees the dongle.
+- **AIO v2 rails**: with the board, the launcher switches on the rail an app needs before starting it
+  (SDR for the SDR apps, LoRa for Meshcore, GPS for GPS). It never switches a rail off: use the power
+  menu for that.
 - **sudo**: ADS-B starts and stops the `ADSB_SERVICE` service (readsb by default) with `sudo`. The ADS-B terminal asks for
   your password if needed. Other menus only call `sudo -n` (never prompt).
 - **Text decoders** (ACARS, VDL2, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
@@ -236,7 +239,8 @@ Reinstalling or updating keeps your values.
 - **A menu does not open**: rofi runs one window at a time. Close the open one with Escape, or click
   its icon again.
 - **GQRX (or another Qt6 app) is white and hard to read**: run `./install.sh --qt-theme` to apply
-  the dark Qt6 palette, then restart the app.
+  the dark Qt6 palette (Fusion style), then restart the app. It also caps the Qt font size at 10 pt:
+  uConsole images set 20 pt, which the Fusion style applies and which overflows GQRX on the screen.
 - **Changing the color by hand in `ubonsole.conf` does nothing**: the color is written into the
   installed files, so run `./install.sh --color <name>` instead.
 - **The terminal keeps its old colors**: st reads X resources when it starts, so only terminals
