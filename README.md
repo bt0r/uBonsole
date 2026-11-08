@@ -23,6 +23,35 @@ generic **Europe (ITU Region 1)**. The accent color is yours to pick among six p
 
 ![Power menu](docs/screenshots/power-menu.png)
 
+### Accent colors
+
+The bar, window borders, menus and launcher follow the accent color picked at install time
+(`./install.sh --color <name>`). Six pastels are available:
+
+**Pink (default)**
+
+![Status bar in pink](docs/screenshots/bar-pink.png)
+
+**Blue**
+
+![Status bar in blue](docs/screenshots/bar-blue.png)
+
+**Red**
+
+![Status bar in red](docs/screenshots/bar-red.png)
+
+**Green**
+
+![Status bar in green](docs/screenshots/bar-green.png)
+
+**Yellow**
+
+![Status bar in yellow](docs/screenshots/bar-yellow.png)
+
+**White**
+
+![Status bar in white](docs/screenshots/bar-white.png)
+
 ## Features
 
 **Status bar** (i3bar + i3blocks), left to right:
