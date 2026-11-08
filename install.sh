@@ -304,6 +304,15 @@ if not c.has_section("Appearance"): c.add_section("Appearance")
 c.set("Appearance", "color_scheme_path", "~/.config/qt6ct/colors/ubonsole.conf")
 c.set("Appearance", "custom_palette", "true")
 c.set("Appearance", "style", "Fusion")
+# uConsole images set 20 pt Qt fonts; the old gtk2 style ignored them, Fusion applies them and GQRX
+# overflows the 720 px screen. Cap the sizes at 10 pt.
+if c.has_section("Fonts"):
+    for key in ("general", "fixed"):
+        if c.has_option("Fonts", key):
+            parts = c.get("Fonts", key).strip('"').split(",")
+            if len(parts) > 1 and parts[1].isdigit() and int(parts[1]) > 10:
+                parts[1] = "10"
+                c.set("Fonts", key, '"%s"' % ",".join(parts))
 with open(path, "w") as f: c.write(f, space_around_delimiters=False)
 PY
   say "Qt6 theme applied (restart Qt apps to see it)"
