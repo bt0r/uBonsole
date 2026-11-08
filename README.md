@@ -250,6 +250,11 @@ Add the pastel to `ACCENTS` in `tools/recolor.py` (the other shades are derived 
 - Based on the community config [dzaczek/Uconsole-i3](https://github.com/dzaczek/Uconsole-i3)
   and the default i3 config.
 
+## Contributing
+
+Repository rules (Karma commit messages, translations, settings, keeping this README in sync, how to
+test the installer) are in [CLAUDE.md](CLAUDE.md).
+
 ## License
 
 [MIT](LICENSE)
