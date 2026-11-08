@@ -178,3 +178,7 @@ that does not fit the screen), then add the code to `REGIONS` / `REGION_NAMES` i
   official list, and the law differs between countries: check your local regulations.
 - Based on the community config [dzaczek/Uconsole-i3](https://github.com/dzaczek/Uconsole-i3)
   and the default i3 config.
+
+## License
+
+[MIT](LICENSE)
