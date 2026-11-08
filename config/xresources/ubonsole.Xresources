@@ -1,0 +1,23 @@
+! uBonsole terminal colors (st, xterm...), loaded after ~/.Xresources by scripts/xresources.
+! #F2C9D9 (text) and #E09AB4 (cursor) are the reference pink: install.sh swaps them for the accent.
+*.background: #000000
+*.foreground: #F2C9D9
+*.cursorColor: #E09AB4
+
+! ANSI palette: fixed pastels, so ls / git / htop colors keep their meaning whatever the accent
+*.color0:  #1A1A1A
+*.color1:  #E89090
+*.color2:  #A8D8A0
+*.color3:  #E0D49A
+*.color4:  #98B8E0
+*.color5:  #D0A8E0
+*.color6:  #98D8D0
+*.color7:  #D8D8D8
+*.color8:  #555555
+*.color9:  #F0A8A8
+*.color10: #C0E8B8
+*.color11: #F0E4B0
+*.color12: #B8D0F0
+*.color13: #E0C0F0
+*.color14: #B8E8E0
+*.color15: #FFFFFF

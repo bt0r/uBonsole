@@ -69,7 +69,10 @@ Update `README.md` in the same commit whenever a change affects users:
   never hardcode paths, service names or devices that a setting already covers.
 - **Colors**: files use the reference pink (`#E09AB4`, `#8A5A6E` and the shades listed in
   `tools/recolor.py`). Never add another hardcoded accent color: use those values (or `@accent` in
-  rofi) so `recolor.py` can swap them. Only the alert red `#E53935` is exempt.
+  rofi) so `recolor.py` can swap them, for named and custom `#RRGGBB` colors alike. Only the alert
+  red `#E53935` and the fixed ANSI palette of `config/xresources/ubonsole.Xresources` are exempt;
+  that palette must never reuse a reference shade, or it would be recolored too.
+- **New themed file**: add it to the `recolor.py` calls in `install.sh`.
 - **Icons**: FontAwesome 4.7 glyphs, written as `$'\uXXXX'` in scripts (raw glyphs only in
   `config/i3/config` and `i3blocks.conf`, which have no escape syntax).
 - **Hardware**: optional hardware must degrade gracefully (no AIO v2 board, missing app → hidden or
@@ -86,6 +89,10 @@ Update `README.md` in the same commit whenever a change affects users:
    HOME=$(mktemp -d) bash -c 'sudo() { return 1; }; export -f sudo; ./install.sh --lang en --region us --color blue --yes'
    ```
    For a visual check on the uConsole, run the menus from that home (`HOME=... ~/.config/i3/scripts/sdr-menu`).
-3. Screenshots and committed files must not contain IP addresses, hostnames, e-mails, secrets or
+3. When testing on the device over SSH, stop processes with `pkill -x <name>`, never `pkill -f
+   <pattern>` with a pattern that also appears in your own command line: it kills your shell before
+   the cleanup steps run. Save and restore any shared state you touch (e.g. `xrdb -query` before,
+   `xrdb -load` after).
+4. Screenshots and committed files must not contain IP addresses, hostnames, e-mails, secrets or
    location data. Mask the Wi-Fi block (IP) in the bar before adding a screenshot.
-4. Check the README against the table above.
+5. Check the README against the table above.

@@ -7,7 +7,8 @@ HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails).
 The interface is available in **English, French, German and Spanish**, and the frequency cheat sheet
 is tailored to where you use the device: **France, United Kingdom, Germany, Spain, USA, Canada** or
 generic **Europe (ITU Region 1)**. The accent color is yours to pick among six pastels: **pink**
-(default), **blue**, **red**, **green**, **yellow** and **white**. Choose all three at install time.
+(default), **blue**, **red**, **green**, **yellow** and **white**, or any custom `#RRGGBB`. Choose all
+three at install time.
 
 ## Screenshots
 
@@ -25,8 +26,9 @@ generic **Europe (ITU Region 1)**. The accent color is yours to pick among six p
 
 ### Accent colors
 
-The bar, window borders, menus and launcher follow the accent color picked at install time
-(`./install.sh --color <name>`). Six pastels are available:
+The bar, window borders, menus, launcher and (optionally) the terminal follow the accent color picked
+at install time (`./install.sh --color <name>`). Six pastels are available, and the installer also
+takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too dark to read on black.
 
 **Pink (default)**
 
@@ -77,9 +79,9 @@ AIO v2 rails (GPS, LoRa, SDR, USB, via [aiov2_ctl](https://github.com/hackergadg
 **Workspaces** — 1 terminal, 2 web, 3 radio (GQRX, SDR++, SatDump, decoders), 4 ADS-B
 (tar1090 runs in its own Firefox instance so it always lands on workspace 4).
 
-**Theming** — one pastel accent color on black for the bar, the window borders, the rofi menus and
-the `$mod+d` launcher (`scripts/rofi-theme.rasi`), plus an optional dark Qt6 palette that makes GQRX
-readable in the same color.
+**Theming** — one accent color on black for the bar, the window borders, the rofi menus and the
+`$mod+d` launcher (`scripts/rofi-theme.rasi`). Optionally the terminal (text and cursor, through X
+resources) and a dark Qt6 palette that makes GQRX readable follow the same color.
 
 ## Install
 
@@ -89,12 +91,16 @@ cd uBonsole
 ./install.sh
 ```
 
-The installer asks for the language, the region and the accent color, offers to install missing packages, backs up
+The installer asks for the language, the region, the accent color and whether the terminal should
+use it, offers to install missing packages, backs up
 your current `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config, writes
 `~/.config/i3/ubonsole.conf` and restarts i3. It detects the AIO v2 tool, the ADS-B service and
 auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme and install the SDR tools.
 
-Non-interactive: `./install.sh --lang en --region us --color blue --qt-theme --yes`
+Non-interactive: `./install.sh --lang en --region us --color blue --terminal-colors --qt-theme --yes`
+
+Options: `--lang`, `--region`, `--color <name|#RRGGBB>`, `--terminal-colors` / `--no-terminal-colors`,
+`--qt-theme`, `--sdr-tools`, `--yes` (`./install.sh --help`).
 
 ### Dependencies
 
@@ -167,7 +173,8 @@ Reinstalling or updating keeps your values.
 |---|---|---|
 | `UBONSOLE_LANG` | `en` | interface language: `en` `fr` `de` `es` |
 | `UBONSOLE_REGION` | from the language | frequency sheet: `fr` `uk` `de` `es` `us` `ca` `eu` |
-| `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white`. Applied by the installer: change it with `./install.sh --color <name>` |
+| `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white` or `#RRGGBB`. Applied by the installer: change it with `./install.sh --color <name>` |
+| `UBONSOLE_TERMINAL_COLORS` | `yes` | terminal text and cursor in the accent color. Applied by the installer: `--terminal-colors` / `--no-terminal-colors` |
 | `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
 | `SDR_DEVICE` | `0` | RTL-SDR index used by the text decoders (`rtl_test` lists the dongles) |
 | `SDR_GAIN` | `40` | tuner gain in dB for those decoders |
@@ -232,6 +239,11 @@ Reinstalling or updating keeps your values.
   the dark Qt6 palette, then restart the app.
 - **Changing the color by hand in `ubonsole.conf` does nothing**: the color is written into the
   installed files, so run `./install.sh --color <name>` instead.
+- **The terminal keeps its old colors**: st reads X resources when it starts, so only terminals
+  opened after an i3 restart (`$mod+Shift+r`) change. With terminal colors on, uBonsole loads
+  `~/.config/i3/Xresources` after your `~/.Xresources`, so its background, text, cursor and 16 ANSI
+  colors win; fonts and other settings of `~/.Xresources` stay yours. Turn it off with
+  `./install.sh --no-terminal-colors`.
 - **GPS on the AIO v2 shows nothing**: on some images the GPS UART (`/dev/ttyS0`) is also used by the
   serial console and a login prompt, so gpsd never gets the NMEA data (`journalctl` shows failed
   logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, disable
@@ -249,10 +261,11 @@ config/i3/lang/<lang>.sh      UI strings (en is the fallback)
 config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper
 config/qt6ct/colors/          Qt6 palette
+config/xresources/            terminal colors (X resources), installed as ~/.config/i3/Xresources
 config/direwolf/sdr.conf      direwolf receive-only config for APRS
 tools/gen-frequencies.py      edit the frequency tables here, then run it
 tools/install-sdr-tools.sh    SDR tools installer
-tools/recolor.py              accent colors: swaps the reference pink in the installed files
+tools/recolor.py              accent colors: swaps the reference pink in the installed files, checks contrast
 ```
 
 ## Adding a language

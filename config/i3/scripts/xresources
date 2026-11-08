@@ -1,0 +1,6 @@
+#!/bin/bash
+# Loads the X resources at i3 start / restart: the user's ~/.Xresources first, then the uBonsole
+# terminal colors (only present when chosen at install). Terminals opened afterwards use them.
+[ -f "$HOME/.Xresources" ] && xrdb -merge "$HOME/.Xresources"
+[ -f "$HOME/.config/i3/Xresources" ] && xrdb -merge "$HOME/.config/i3/Xresources"
+exit 0

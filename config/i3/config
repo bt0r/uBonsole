@@ -5,7 +5,8 @@
 # The uConsole panel is mounted in portrait: rotate it to landscape
 exec --no-startup-id xrandr --output DSI-1 --rotate right
 exec_always --no-startup-id feh --bg-scale ~/.config/i3/wallpapers/ubonsole-night.jpg
-exec --no-startup-id xrdb -merge ~/.Xresources
+# X resources: ~/.Xresources, then the uBonsole terminal colors if installed
+exec_always --no-startup-id ~/.config/i3/scripts/xresources
 exec --no-startup-id setxkbmap us
 
 # Compositor disabled on purpose (no config, saves CPU/battery)

@@ -7,7 +7,8 @@
 # Options:
 #   --lang en|fr|de|es   interface language (bar menus + frequency cheat sheet)
 #   --region CODE        frequency cheat sheet region: fr uk de es us ca eu (eu = other Europe)
-#   --color NAME         pastel accent color: pink (default) blue red green yellow white
+#   --color NAME|#HEX    accent color: pink (default) blue red green yellow white, or a custom #RRGGBB
+#   --terminal-colors    use the accent in the terminal (st reads X resources); --no-terminal-colors to skip
 #   --qt-theme           also apply the dark Qt6 theme in the accent color (qt6ct)
 #   --sdr-tools          also install the SDR tools (tools/install-sdr-tools.sh)
 #   --yes                do not ask questions (keeps defaults for unset options)
@@ -21,16 +22,18 @@ REGIONS=(fr uk de es us ca eu)
 REGION_NAMES=(France "United Kingdom" Germany Spain USA Canada "Other Europe (generic ITU Region 1)")
 COLORS=(pink blue red green yellow white)
 
-UB_LANG="" UB_REGION="" UB_COLOR="" QT_THEME="" SDR_TOOLS="" YES=0
+UB_LANG="" UB_REGION="" UB_COLOR="" TERM_COLORS="" QT_THEME="" SDR_TOOLS="" YES=0
 while [ $# -gt 0 ]; do
   case $1 in
     --lang) UB_LANG=${2:-}; shift ;;
     --region) UB_REGION=${2:-}; shift ;;
     --color) UB_COLOR=${2:-}; shift ;;
+    --terminal-colors) TERM_COLORS=yes ;;
+    --no-terminal-colors) TERM_COLORS=no ;;
     --qt-theme) QT_THEME=1 ;;
     --sdr-tools) SDR_TOOLS=1 ;;
     --yes|-y) YES=1 ;;
-    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
   shift
@@ -106,20 +109,47 @@ if [ -z "$UB_COLOR" ]; then
   if [ "$YES" = 1 ]; then
     UB_COLOR=$DEF
   else
-    echo "Accent color (pastel, on black):"
-    DEFN=1
+    echo "Accent color (shown on black):"
+    DEFN=7
     for i in "${!COLORS[@]}"; do
       echo "  $((i + 1))) ${COLORS[$i]}"
       [ "${COLORS[$i]}" = "$DEF" ] && DEFN=$((i + 1))
     done
+    echo "  7) custom (#RRGGBB)$([ "$DEFN" = 7 ] && echo ": $DEF")"
     read -rp "Choice [$DEFN]: " n
     n=${n:-$DEFN}
-    [[ $n =~ ^[1-6]$ ]] || { echo "Invalid choice" >&2; exit 1; }
-    UB_COLOR=${COLORS[$((n - 1))]}
+    [[ $n =~ ^[1-7]$ ]] || { echo "Invalid choice" >&2; exit 1; }
+    if [ "$n" = 7 ]; then
+      read -rp "Color as #RRGGBB (pastel tones read best) [$DEF]: " UB_COLOR
+      UB_COLOR=${UB_COLOR:-$DEF}
+    else
+      UB_COLOR=${COLORS[$((n - 1))]}
+    fi
   fi
 fi
-[[ " ${COLORS[*]} " == *" $UB_COLOR "* ]] || { echo "Unsupported color: $UB_COLOR (${COLORS[*]})" >&2; exit 1; }
+# Pastel name or custom #RRGGBB; custom colors are checked for contrast on the black background
+if [[ " ${COLORS[*]} " != *" $UB_COLOR "* ]]; then
+  CHECK=$(python3 "$REPO/tools/recolor.py" --check "$UB_COLOR") \
+    || { echo "Unsupported color: $UB_COLOR (${COLORS[*]} or #RRGGBB)" >&2; exit 1; }
+  read -r UB_COLOR RATIO VERDICT <<< "$CHECK"
+  if [ "$VERDICT" = low ]; then
+    say "Warning: $UB_COLOR has a low contrast on black ($RATIO:1, 7:1 recommended), text may be hard to read."
+    ask "Use it anyway?" n || { echo "Pick a lighter color." >&2; exit 1; }
+  fi
+fi
 say "Accent color: $UB_COLOR"
+
+# --- Terminal colors ----------------------------------------------------------
+# st reads its colors from X resources: optionally load accent-colored ones over ~/.Xresources
+if [ -z "$TERM_COLORS" ]; then
+  DEF=$(old UBONSOLE_TERMINAL_COLORS); DEF=${DEF:-yes}
+  if ask "Use the accent color in the terminal too (overrides the colors of ~/.Xresources)?" "${DEF:0:1}"; then
+    TERM_COLORS=yes
+  else
+    TERM_COLORS=no
+  fi
+fi
+say "Terminal colors: $TERM_COLORS"
 
 # --- Dependencies -------------------------------------------------------------
 # command -> Debian package
@@ -162,6 +192,12 @@ cp -r "$REPO/config/i3/." "$I3_DIR/"
 chmod +x "$I3_DIR"/scripts/*
 # The copies hold the reference pink: swap it for the chosen accent
 python3 "$REPO/tools/recolor.py" "$UB_COLOR" "$I3_DIR/config" "$I3_DIR/i3blocks.conf" "$I3_DIR/scripts/rofi-theme.rasi"
+if [ "$TERM_COLORS" = yes ]; then
+  cp "$REPO/config/xresources/ubonsole.Xresources" "$I3_DIR/Xresources"
+  python3 "$REPO/tools/recolor.py" "$UB_COLOR" "$I3_DIR/Xresources"
+else
+  rm -f "$I3_DIR/Xresources"
+fi
 
 # --- Settings (ubonsole.conf) ---------------------------------------------------
 # Detected values are only used when the setting is not already set
@@ -201,9 +237,11 @@ cat > "$CONF" <<EOF
 UBONSOLE_LANG=$UB_LANG
 # Frequency cheat sheet region: fr, uk, de, es, us, ca, eu (other Europe)
 UBONSOLE_REGION=$UB_REGION
-# Accent color: pink, blue, red, green, yellow, white. Applied by install.sh, so change it with
-# "./install.sh --color <name>" rather than here.
+# Accent color: pink, blue, red, green, yellow, white or a custom #RRGGBB. Applied by install.sh,
+# so change it with "./install.sh --color <name|#RRGGBB>" rather than here.
 UBONSOLE_COLOR=$UB_COLOR
+# Terminal (st) colors follow the accent: yes / no. Also applied by install.sh.
+UBONSOLE_TERMINAL_COLORS=$TERM_COLORS
 
 # HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails): the "aiov2_ctl" command or the
 # path to aiov2_ctl.py. Empty = no AIO v2 board (those toggles are hidden).
@@ -276,4 +314,4 @@ if [ -z "$SDR_TOOLS" ] && ask "Install the SDR tools (SDR++, SatDump, direwolf, 
 if pgrep -x i3 >/dev/null && command -v i3-msg >/dev/null; then
   i3-msg -q restart 2>/dev/null && say "i3 restarted"
 fi
-say "Done. Change the language or region in $CONF, the color with: ./install.sh --color <name>"
+say "Done. Change the language or region in $CONF, the color with: ./install.sh --color <name|#RRGGBB>"
