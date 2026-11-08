@@ -236,8 +236,10 @@ Reinstalling or updating keeps your values.
 - **AIO v2 rails**: with the board, the launcher switches on the rail an app needs before starting it
   (SDR for the SDR apps, LoRa for Meshcore, GPS for GPS). It never switches a rail off: use the power
   menu for that.
-- **sudo**: ADS-B starts and stops the `ADSB_SERVICE` service (readsb by default) with `sudo`. The ADS-B terminal asks for
-  your password if needed. Other menus only call `sudo -n` (never prompt).
+- **ADS-B** starts the `ADSB_SERVICE` service (readsb by default) and opens tar1090 on workspace 4.
+  It keeps running until "Stop all" or until you start another SDR app. Starting the service uses
+  `sudo`: without password-less sudo, a terminal opens just to ask for the password. Other menus only
+  call `sudo -n` (never prompt).
 - **Text decoders** (ACARS, VDL2, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
   one block per decoded message. A quiet terminal means nothing was received yet: check the antenna,
   go outside, or confirm activity on the waterfall in GQRX first.

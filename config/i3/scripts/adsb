@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
-# ADS-B: start the decoder service ($ADSB_SERVICE), open tar1090 in its own Firefox instance, Enter stops everything
+# ADS-B: start the decoder service ($ADSB_SERVICE) and open tar1090 in its own Firefox instance.
+# It keeps running until "Stop all" in the radio launcher, or until another SDR app is started.
 . ~/.config/i3/scripts/common.sh
 pkill -x gqrx; pkill -x sdrpp
-sudo systemctl start "$ADSB_SERVICE" && ~/.config/i3/scripts/tar1090-firefox
-read -rp "$L_ADSB_STOP" && sudo systemctl stop "$ADSB_SERVICE"
+if ! systemctl is-active -q "$ADSB_SERVICE"; then
+  # Without a password-less sudo, ask for the password in a terminal (and only for that)
+  sudo -n systemctl start "$ADSB_SERVICE" 2>/dev/null \
+    || st -c adsb-term -t ADS-B -e sudo systemctl start "$ADSB_SERVICE"
+fi
+if systemctl is-active -q "$ADSB_SERVICE"; then
+  pkill -RTMIN+13 i3blocks
+  exec ~/.config/i3/scripts/tar1090-firefox
+fi
+# shellcheck disable=SC2059
+rofi -e "$(printf "$L_ADSB_FAILED" "$ADSB_SERVICE")" -theme "$ROFI_THEME"

@@ -126,9 +126,10 @@ assign [class="(?i)sdr\+\+|sdrpp"] $ws3
 assign [class="(?i)satdump"] $ws3
 assign [class="^sdr-term$"] $ws3
 
-# ADS-B: dedicated Firefox instance (X class "tar1090") + its terminal -> workspace 4
+# ADS-B: dedicated Firefox instance (X class "tar1090") -> workspace 4. The terminal that only asks for
+# the sudo password (when needed) floats on the current workspace so it is seen.
 assign [class="^tar1090$"] $ws4
-assign [class="^adsb-term$"] $ws4
+for_window [class="^adsb-term$"] floating enable
 
 assign [class="vlc"] $ws5
 assign [class="Thunar"] $ws6
