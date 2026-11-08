@@ -19,7 +19,7 @@ BATTERY=${BATTERY:-/sys/class/power_supply/axp20x-battery}
 if [ "$UBONSOLE_LANG" != en ] && [ -f "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh" ]; then
   . "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh"
 fi
-ROFI_THEME="$UBONSOLE_DIR/scripts/rofi-pink.rasi"
+ROFI_THEME="$UBONSOLE_DIR/scripts/rofi-theme.rasi"
 
 # HackerGadgets AIO v2 rails (GPS / LoRa / SDR / USB). AIOV2_CTL is either a command
 # (installed with "aiov2_ctl --install") or the path to aiov2_ctl.py.

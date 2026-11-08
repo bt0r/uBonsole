@@ -9,7 +9,7 @@ done
 if [ -n "$BLOCK_BUTTON" ]; then
   if ! pkill -f "rofi -e.*-name frequencies"; then
     setsid -f rofi -e "$(cat "$FREQ")" -markup -name frequencies -theme "$ROFI_THEME" \
-      -theme-str '* { font: "DejaVu Sans Mono 10"; } window { location: north; anchor: north; y-offset: 32px; width: 1240px; padding: 8px; } textbox { background-color: #000000; text-color: #E09AB4; }' \
+      -theme-str '* { font: "DejaVu Sans Mono 10"; } window { location: north; anchor: north; y-offset: 32px; width: 1240px; padding: 8px; }' \
       >/dev/null 2>&1
   fi
 fi

@@ -152,7 +152,8 @@ mode "resize" {
 }
 bindsym $mod+r mode "resize"
 
-# --- Colors: wallpaper pink on black ---------------------------------------
+# --- Colors: accent on black ----------------------------------------------
+# #E09AB4 / #8A5A6E are the reference pink; install.sh swaps them for the chosen accent
 set $bg-color            #262d38
 set $inactive-bg-color   #262d38
 set $text-color          #f3f4f5

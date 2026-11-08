@@ -7,7 +7,8 @@
 # Options:
 #   --lang en|fr|de|es   interface language (bar menus + frequency cheat sheet)
 #   --region CODE        frequency cheat sheet region: fr uk de es us ca eu (eu = other Europe)
-#   --qt-theme           also apply the pink/black Qt6 theme (qt6ct)
+#   --color NAME         pastel accent color: pink (default) blue red green yellow white
+#   --qt-theme           also apply the dark Qt6 theme in the accent color (qt6ct)
 #   --sdr-tools          also install the SDR tools (tools/install-sdr-tools.sh)
 #   --yes                do not ask questions (keeps defaults for unset options)
 set -euo pipefail
@@ -18,16 +19,18 @@ LANGS=(en fr de es)
 LANG_NAMES=(English Français Deutsch Español)
 REGIONS=(fr uk de es us ca eu)
 REGION_NAMES=(France "United Kingdom" Germany Spain USA Canada "Other Europe (generic ITU Region 1)")
+COLORS=(pink blue red green yellow white)
 
-UB_LANG="" UB_REGION="" QT_THEME="" SDR_TOOLS="" YES=0
+UB_LANG="" UB_REGION="" UB_COLOR="" QT_THEME="" SDR_TOOLS="" YES=0
 while [ $# -gt 0 ]; do
   case $1 in
     --lang) UB_LANG=${2:-}; shift ;;
     --region) UB_REGION=${2:-}; shift ;;
+    --color) UB_COLOR=${2:-}; shift ;;
     --qt-theme) QT_THEME=1 ;;
     --sdr-tools) SDR_TOOLS=1 ;;
     --yes|-y) YES=1 ;;
-    -h|--help) sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
   shift
@@ -97,6 +100,27 @@ fi
 [[ " ${REGIONS[*]} " == *" $UB_REGION "* ]] || { echo "Unsupported region: $UB_REGION (${REGIONS[*]})" >&2; exit 1; }
 say "Region: $UB_REGION"
 
+# --- Accent color -------------------------------------------------------------
+if [ -z "$UB_COLOR" ]; then
+  DEF=$(old UBONSOLE_COLOR); DEF=${DEF:-pink}
+  if [ "$YES" = 1 ]; then
+    UB_COLOR=$DEF
+  else
+    echo "Accent color (pastel, on black):"
+    DEFN=1
+    for i in "${!COLORS[@]}"; do
+      echo "  $((i + 1))) ${COLORS[$i]}"
+      [ "${COLORS[$i]}" = "$DEF" ] && DEFN=$((i + 1))
+    done
+    read -rp "Choice [$DEFN]: " n
+    n=${n:-$DEFN}
+    [[ $n =~ ^[1-6]$ ]] || { echo "Invalid choice" >&2; exit 1; }
+    UB_COLOR=${COLORS[$((n - 1))]}
+  fi
+fi
+[[ " ${COLORS[*]} " == *" $UB_COLOR "* ]] || { echo "Unsupported color: $UB_COLOR (${COLORS[*]})" >&2; exit 1; }
+say "Accent color: $UB_COLOR"
+
 # --- Dependencies -------------------------------------------------------------
 # command -> Debian package
 declare -A DEPS=(
@@ -134,6 +158,8 @@ say "Installing i3 config to $I3_DIR"
 mkdir -p "$I3_DIR"
 cp -r "$REPO/config/i3/." "$I3_DIR/"
 chmod +x "$I3_DIR"/scripts/*
+# The copies hold the reference pink: swap it for the chosen accent
+python3 "$REPO/tools/recolor.py" "$UB_COLOR" "$I3_DIR/config" "$I3_DIR/i3blocks.conf" "$I3_DIR/scripts/rofi-theme.rasi"
 
 # --- Settings (ubonsole.conf) ---------------------------------------------------
 # Detected values are only used when the setting is not already set
@@ -173,6 +199,9 @@ cat > "$CONF" <<EOF
 UBONSOLE_LANG=$UB_LANG
 # Frequency cheat sheet region: fr, uk, de, es, us, ca, eu (other Europe)
 UBONSOLE_REGION=$UB_REGION
+# Accent color: pink, blue, red, green, yellow, white. Applied by install.sh, so change it with
+# "./install.sh --color <name>" rather than here.
+UBONSOLE_COLOR=$UB_COLOR
 
 # HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails): the "aiov2_ctl" command or the
 # path to aiov2_ctl.py. Empty = no AIO v2 board (those toggles are hidden).
@@ -214,18 +243,22 @@ mkdir -p "$HOME/.config/direwolf"
 cp "$REPO/config/direwolf/sdr.conf" "$HOME/.config/direwolf/sdr.conf"
 
 # --- Qt6 theme (optional) -----------------------------------------------------
-if [ -z "$QT_THEME" ] && ask "Apply the pink/black Qt6 theme (qt6ct, e.g. for GQRX)?" n; then QT_THEME=1; fi
+QT=$HOME/.config/qt6ct
+if [ -z "$QT_THEME" ] && [ ! -f "$QT/colors/ubonsole.conf" ] \
+   && ask "Apply the dark Qt6 theme in the accent color (qt6ct, e.g. for GQRX)?" n; then QT_THEME=1; fi
+# Already applied once: refresh the palette so it follows the accent color
+[ -f "$QT/colors/ubonsole.conf" ] && QT_THEME=1
 if [ "$QT_THEME" = 1 ]; then
-  QT=$HOME/.config/qt6ct
   mkdir -p "$QT/colors"
-  cp "$REPO/config/qt6ct/colors/ubonsole-pink.conf" "$QT/colors/"
+  cp "$REPO/config/qt6ct/colors/ubonsole.conf" "$QT/colors/"
+  python3 "$REPO/tools/recolor.py" "$UB_COLOR" "$QT/colors/ubonsole.conf"
   [ -f "$QT/qt6ct.conf" ] && cp "$QT/qt6ct.conf" "$QT/qt6ct.conf.backup-$(date +%Y%m%d-%H%M%S)"
   python3 - "$QT/qt6ct.conf" <<'PY'
 import configparser, sys
 path = sys.argv[1]
 c = configparser.RawConfigParser(); c.optionxform = str; c.read(path)
 if not c.has_section("Appearance"): c.add_section("Appearance")
-c.set("Appearance", "color_scheme_path", "~/.config/qt6ct/colors/ubonsole-pink.conf")
+c.set("Appearance", "color_scheme_path", "~/.config/qt6ct/colors/ubonsole.conf")
 c.set("Appearance", "custom_palette", "true")
 c.set("Appearance", "style", "Fusion")
 with open(path, "w") as f: c.write(f, space_around_delimiters=False)
@@ -241,4 +274,4 @@ if [ -z "$SDR_TOOLS" ] && ask "Install the SDR tools (SDR++, SatDump, direwolf, 
 if pgrep -x i3 >/dev/null && command -v i3-msg >/dev/null; then
   i3-msg -q restart 2>/dev/null && say "i3 restarted"
 fi
-say "Done. Change the language or region later in $I3_DIR/ubonsole.conf"
+say "Done. Change the language or region in $CONF, the color with: ./install.sh --color <name>"

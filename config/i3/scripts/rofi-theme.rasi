@@ -1,0 +1,22 @@
+/* uBonsole rofi theme: accent color on black (bar menus and launcher).
+   #E09AB4 is the reference pink; install.sh swaps it for the chosen color. */
+* {
+    accent: #E09AB4;
+    black: #000000;
+    font: "DejaVu Sans Mono 11";
+    background-color: @black;
+    text-color: @accent;
+    border-color: @accent;
+}
+window { border: 2px; padding: 10px; }
+mainbox { children: [ message, listview ]; spacing: 8px; }
+message { border: 0 0 1px 0; padding: 0 0 6px 0; }
+textbox { text-color: @accent; }
+listview { scrollbar: false; fixed-height: false; }
+element { padding: 3px 6px; }
+element normal.normal, element alternate.normal, element normal.active, element alternate.active { background-color: @black; text-color: @accent; }
+element selected.normal, element selected.active { background-color: @accent; text-color: @black; }
+element-text { background-color: inherit; text-color: inherit; }
+inputbar { children: [ prompt, entry ]; spacing: 10px; border: 0 0 1px 0; padding: 0 0 6px 0; }
+prompt, entry { text-color: @accent; }
+entry { placeholder: ""; cursor-color: @accent; }

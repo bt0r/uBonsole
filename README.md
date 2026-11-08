@@ -1,12 +1,13 @@
 # uBonsole
 
-An i3 setup for the **ClockworkPi uConsole** (CM4) built around software-defined radio: a pink-on-black
+An i3 setup for the **ClockworkPi uConsole** (CM4) built around software-defined radio: a pastel-on-black
 status bar, a one-click radio app launcher, an SDR frequency cheat sheet and a power menu for the
 HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails).
 
 The interface is available in **English, French, German and Spanish**, and the frequency cheat sheet
 is tailored to where you use the device: **France, United Kingdom, Germany, Spain, USA, Canada** or
-generic **Europe (ITU Region 1)**. Pick both at install time.
+generic **Europe (ITU Region 1)**. The accent color is yours to pick among six pastels: **pink**
+(default), **blue**, **red**, **green**, **yellow** and **white**. Choose all three at install time.
 
 ## Screenshots
 
@@ -47,8 +48,9 @@ AIO v2 rails (GPS, LoRa, SDR, USB, via [aiov2_ctl](https://github.com/hackergadg
 **Workspaces** — 1 terminal, 2 web, 3 radio (GQRX, SDR++, SatDump, decoders), 4 ADS-B
 (tar1090 runs in its own Firefox instance so it always lands on workspace 4).
 
-**Theming** — rofi menus and the `$mod+d` launcher share one theme (`scripts/rofi-pink.rasi`);
-an optional Qt6 palette makes GQRX readable in the same colors.
+**Theming** — one pastel accent color on black for the bar, the window borders, the rofi menus and
+the `$mod+d` launcher (`scripts/rofi-theme.rasi`), plus an optional dark Qt6 palette that makes GQRX
+readable in the same color.
 
 ## Install
 
@@ -58,12 +60,12 @@ cd uBonsole
 ./install.sh
 ```
 
-The installer asks for the language and the region, offers to install missing packages, backs up
+The installer asks for the language, the region and the accent color, offers to install missing packages, backs up
 your current `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config, writes
 `~/.config/i3/ubonsole.conf` and restarts i3. It detects the AIO v2 tool, the ADS-B service and
 auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme and install the SDR tools.
 
-Non-interactive: `./install.sh --lang en --region us --qt-theme --yes`
+Non-interactive: `./install.sh --lang en --region us --color blue --qt-theme --yes`
 
 ### Dependencies
 
@@ -136,6 +138,7 @@ Reinstalling or updating keeps your values.
 |---|---|---|
 | `UBONSOLE_LANG` | `en` | interface language: `en` `fr` `de` `es` |
 | `UBONSOLE_REGION` | from the language | frequency sheet: `fr` `uk` `de` `es` `us` `ca` `eu` |
+| `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white`. Applied by the installer: change it with `./install.sh --color <name>` |
 | `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
 | `SDR_DEVICE` | `0` | RTL-SDR index used by the text decoders (`rtl_test` lists the dongles) |
 | `SDR_GAIN` | `40` | tuner gain in dB for those decoders |
@@ -198,6 +201,8 @@ Reinstalling or updating keeps your values.
   its icon again.
 - **GQRX (or another Qt6 app) is white and hard to read**: run `./install.sh --qt-theme` to apply
   the dark Qt6 palette, then restart the app.
+- **Changing the color by hand in `ubonsole.conf` does nothing**: the color is written into the
+  installed files, so run `./install.sh --color <name>` instead.
 - **GPS on the AIO v2 shows nothing**: on some images the GPS UART (`/dev/ttyS0`) is also used by the
   serial console and a login prompt, so gpsd never gets the NMEA data (`journalctl` shows failed
   logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, disable
@@ -218,6 +223,7 @@ config/qt6ct/colors/          Qt6 palette
 config/direwolf/sdr.conf      direwolf receive-only config for APRS
 tools/gen-frequencies.py      edit the frequency tables here, then run it
 tools/install-sdr-tools.sh    SDR tools installer
+tools/recolor.py              accent colors: swaps the reference pink in the installed files
 ```
 
 ## Adding a language
@@ -230,6 +236,11 @@ tools/install-sdr-tools.sh    SDR tools installer
 
 Add an entry to `REGIONS` and `TITLE` in `tools/gen-frequencies.py`, run it (it reports any line
 that does not fit the screen), then add the code to `REGIONS` / `REGION_NAMES` in `install.sh`.
+
+## Adding a color
+
+Add the pastel to `ACCENTS` in `tools/recolor.py` (the other shades are derived from it), then to
+`COLORS` in `install.sh`. Keep it readable on black.
 
 ## Notes
 
