@@ -140,10 +140,13 @@ fi
 say "Accent color: $UB_COLOR"
 
 # --- Terminal colors ----------------------------------------------------------
-# st reads its colors from X resources: optionally load accent-colored ones over ~/.Xresources
+# st reads its colors from X resources: optionally load accent-colored ones over ~/.Xresources.
+# Off unless the user accepts, since it overrides their own terminal colors.
 if [ -z "$TERM_COLORS" ]; then
-  DEF=$(old UBONSOLE_TERMINAL_COLORS); DEF=${DEF:-yes}
-  if ask "Use the accent color in the terminal too (overrides the colors of ~/.Xresources)?" "${DEF:0:1}"; then
+  DEF=$(old UBONSOLE_TERMINAL_COLORS); DEF=${DEF:-no}
+  echo "The terminal (st) can use the same theme: black background, text and cursor in the accent"
+  echo "color, pastel ANSI colors. It is loaded over ~/.Xresources and overrides its colors."
+  if ask "Apply the same theme to the terminal?" "${DEF:0:1}"; then
     TERM_COLORS=yes
   else
     TERM_COLORS=no
@@ -240,7 +243,7 @@ UBONSOLE_REGION=$UB_REGION
 # Accent color: pink, blue, red, green, yellow, white or a custom #RRGGBB. Applied by install.sh,
 # so change it with "./install.sh --color <name|#RRGGBB>" rather than here.
 UBONSOLE_COLOR=$UB_COLOR
-# Terminal (st) colors follow the accent: yes / no. Also applied by install.sh.
+# Terminal (st) uses the same theme through X resources: yes / no (default). Applied by install.sh.
 UBONSOLE_TERMINAL_COLORS=$TERM_COLORS
 
 # HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails): the "aiov2_ctl" command or the

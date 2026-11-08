@@ -92,7 +92,7 @@ cd uBonsole
 ```
 
 The installer asks for the language, the region, the accent color and whether the terminal should
-use it, offers to install missing packages, backs up
+use the same theme (off by default, as it overrides the colors of `~/.Xresources`), offers to install missing packages, backs up
 your current `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config, writes
 `~/.config/i3/ubonsole.conf` and restarts i3. It detects the AIO v2 tool, the ADS-B service and
 auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme and install the SDR tools.
@@ -174,7 +174,7 @@ Reinstalling or updating keeps your values.
 | `UBONSOLE_LANG` | `en` | interface language: `en` `fr` `de` `es` |
 | `UBONSOLE_REGION` | from the language | frequency sheet: `fr` `uk` `de` `es` `us` `ca` `eu` |
 | `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white` or `#RRGGBB`. Applied by the installer: change it with `./install.sh --color <name>` |
-| `UBONSOLE_TERMINAL_COLORS` | `yes` | terminal text and cursor in the accent color. Applied by the installer: `--terminal-colors` / `--no-terminal-colors` |
+| `UBONSOLE_TERMINAL_COLORS` | `no` | same theme in the terminal (text and cursor in the accent color), only if you accept it at install. Applied by the installer: `--terminal-colors` / `--no-terminal-colors` |
 | `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
 | `SDR_DEVICE` | `0` | RTL-SDR index used by the text decoders (`rtl_test` lists the dongles) |
 | `SDR_GAIN` | `40` | tuner gain in dB for those decoders |
