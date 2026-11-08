@@ -58,25 +58,56 @@ cd uBonsole
 ./install.sh
 ```
 
-The installer asks for the language and the region, offers to install missing packages, backs up your current
-`~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config and restarts i3. It can also apply
-the Qt6 theme and install the SDR tools.
+The installer asks for the language and the region, offers to install missing packages, backs up
+your current `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config, writes
+`~/.config/i3/ubonsole.conf` and restarts i3. It detects the AIO v2 tool, the ADS-B service and
+auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme and install the SDR tools.
 
 Non-interactive: `./install.sh --lang en --region us --qt-theme --yes`
 
-Change them later in `~/.config/i3/ubonsole.conf`:
-`UBONSOLE_LANG=en|fr|de|es` and `UBONSOLE_REGION=fr|uk|de|es|us|ca|eu`.
-The scripts read this file on every click, so no restart is needed.
+### Dependencies
 
-### Requirements
+Required (the installer offers to install the missing ones with apt):
 
-- uConsole with Debian / Raspberry Pi OS trixie, i3, i3blocks, rofi, FontAwesome and DejaVu fonts
-- `st` terminal
-- Optional: HackerGadgets AIO v2 board and `aiov2_ctl` (`~/aiov2_ctl/aiov2_ctl.py`)
-- Optional SDR tools: `tools/install-sdr-tools.sh` (SDR++, SatDump, direwolf, acarsdec, dumpvdl2,
-  radiosonde_auto_rx). It targets Debian trixie on arm64 and builds part of them from source, which
-  takes a while on a CM4.
-- ADS-B needs **readsb** and **tar1090**, which are not installed by these scripts.
+| For | Debian packages |
+|---|---|
+| Desktop and bar | `i3` `i3blocks` `rofi` `feh` `x11-xserver-utils` `fonts-font-awesome` `fonts-dejavu-core` |
+| Bar blocks | `brightnessctl` `wireplumber` (volume) `network-manager` (Wi-Fi) `rfkill` (Bluetooth) |
+| Screenshots | `maim` `xdotool` `xclip` |
+| ADS-B map, auto_rx page | `firefox-esr` |
+| Scripts | `python3` |
+| Terminal | `st` (not in Debian under that name: the uConsole images ship it in `/usr/local/bin`; `stterm` + a symlink also works) |
+
+Optional, per radio app. A missing app is shown as `(not installed)` in the launcher:
+
+| App | Package / source | Installed by `tools/install-sdr-tools.sh` |
+|---|---|---|
+| GQRX | `gqrx-sdr` | yes |
+| SDR++ | official `.deb` (SDRPlusPlus nightly) | yes |
+| SatDump | `satdump` | yes |
+| APRS | `direwolf` + `rtl-sdr` (`rtl_fm`) | yes |
+| 433 MHz sensors | `rtl-433` | yes |
+| ACARS / VDL2 | `acarsdec` / `dumpvdl2` (+ `libacars`), built from source | yes |
+| Radiosondes | radiosonde_auto_rx, built from source in `~/src` | yes |
+| ADS-B | `readsb` (or `dump1090-fa`) + `tar1090` | no, see their install scripts |
+| Meshcore | `meshcore-console` ([meshcore-uconsole](https://github.com/cwill747/meshcore-uconsole)) | no |
+| GPS | `gpsd` + `gpsd-clients` (`xgps`) | no |
+
+`tools/install-sdr-tools.sh` targets Debian trixie on arm64 and builds part of the tools from
+source, which takes a while on a CM4.
+
+### HackerGadgets AIO v2 board (optional)
+
+The power menu and the radio launcher switch the board's GPS, LoRa, SDR and USB rails through
+[aiov2_ctl](https://github.com/hackergadgets/aiov2_ctl):
+
+```bash
+git clone https://github.com/hackergadgets/aiov2_ctl.git ~/aiov2_ctl
+sudo python3 ~/aiov2_ctl/aiov2_ctl.py --install    # optional: installs the "aiov2_ctl" command
+```
+
+The installer finds either the `aiov2_ctl` command or `~/aiov2_ctl/aiov2_ctl.py`. Elsewhere, set
+`AIOV2_CTL` in `ubonsole.conf`. Without the board, those toggles are simply hidden.
 
 ### Update
 
@@ -95,6 +126,35 @@ Put a backup back and restart i3 (`$mod+Shift+r`):
 rm -rf ~/.config/i3
 mv ~/.config/i3.backup-<date> ~/.config/i3
 ```
+
+## Configuration
+
+`~/.config/i3/ubonsole.conf` is read on every click, so changes apply without restarting.
+Reinstalling or updating keeps your values.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `UBONSOLE_LANG` | `en` | interface language: `en` `fr` `de` `es` |
+| `UBONSOLE_REGION` | from the language | frequency sheet: `fr` `uk` `de` `es` `us` `ca` `eu` |
+| `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
+| `SDR_DEVICE` | `0` | RTL-SDR index used by the text decoders (`rtl_test` lists the dongles) |
+| `SDR_GAIN` | `40` | tuner gain in dB for those decoders |
+| `ADSB_SERVICE` | detected | systemd service of the ADS-B decoder (`readsb`, `dump1090-fa`…) |
+| `TAR1090_URL` | `http://localhost/tar1090` | page opened for ADS-B |
+| `AUTORX_DIR` | detected | radiosonde_auto_rx folder (the one with `auto_rx.py`) |
+| `BATTERY` | detected | battery in `/sys/class/power_supply` |
+
+### Other hardware, antennas and dongles
+
+- **Antennas**: the scripts never assume which connector an antenna is on. They only open the
+  RTL-SDR, so plug the antenna that suits the band (the frequency sheet tells you which band you are
+  on). A 1090 MHz antenna will hear little on 137 MHz satellites or HF, and vice versa.
+- **External or several SDR dongles**: set `SDR_DEVICE` to the dongle the text decoders should use.
+  GQRX, SDR++ and SatDump choose their device in their own settings, auto_rx in `station.cfg`,
+  readsb in its own config (`/etc/default/readsb`).
+- **No AIO v2 board**: leave `AIOV2_CTL` empty. Everything else works the same.
+- **Not a uConsole**: the i3 config rotates the display `DSI-1` and the Wi-Fi block reads `wlan0`;
+  adjust `config/i3/config` and `config/i3/i3blocks.conf`.
 
 ## Keyboard shortcuts
 
@@ -123,7 +183,7 @@ mv ~/.config/i3.backup-<date> ~/.config/i3
 
 - **One app at a time**: the RTL-SDR dongle can only be opened by one program. The launcher stops
   the running app (and readsb) before starting another; "Stop all" frees the dongle.
-- **sudo**: ADS-B starts and stops the `readsb` service with `sudo`. The ADS-B terminal asks for
+- **sudo**: ADS-B starts and stops the `ADSB_SERVICE` service (readsb by default) with `sudo`. The ADS-B terminal asks for
   your password if needed. Other menus only call `sudo -n` (never prompt).
 - **Text decoders** (ACARS, VDL2, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
   one block per decoded message. A quiet terminal means nothing was received yet: check the antenna,
@@ -142,15 +202,15 @@ mv ~/.config/i3.backup-<date> ~/.config/i3
   serial console and a login prompt, so gpsd never gets the NMEA data (`journalctl` shows failed
   logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, disable
   `serial-getty@ttyS0`, point gpsd at `/dev/ttyS0` and reboot.
-- **Other hardware**: the config assumes the uConsole: display `DSI-1` (rotated), battery
-  `axp20x-battery`, Wi-Fi `wlan0`. Adjust `config/i3/config` and `i3blocks.conf` for other devices.
+- **A decoder says "usb_claim_interface error" or finds no device**: another app still holds the
+  dongle (use "Stop all"), or `SDR_DEVICE` points to a dongle that is not plugged in.
 
 ## Layout
 
 ```
 config/i3/config              i3 config
 config/i3/i3blocks.conf       status bar blocks
-config/i3/scripts/            block scripts, menus, launcher, rofi theme
+config/i3/scripts/            block scripts, menus, launcher, rofi theme (common.sh: settings + helpers)
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
 config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper

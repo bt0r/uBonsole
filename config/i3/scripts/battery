@@ -1,8 +1,8 @@
 #!/bin/bash
 # i3blocks: battery. Icon follows the level, red below 15 %, one-shot warning at 10 %.
 # Click = power menu
-. ~/.config/i3/scripts/i18n.sh
-BAT=/sys/class/power_supply/axp20x-battery
+. ~/.config/i3/scripts/common.sh
+BAT=$BATTERY
 [ -n "$BLOCK_BUTTON" ] && setsid -f ~/.config/i3/scripts/power-menu >/dev/null 2>&1
 
 CAP=$(cat "$BAT/capacity" 2>/dev/null) || { echo "? bat"; exit 0; }

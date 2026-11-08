@@ -43,15 +43,30 @@ ask() {  # ask "question" default(y/n) -> returns 0 for yes
   [[ $ans =~ ^[yYoO] ]]
 }
 
+# --- Existing settings ------------------------------------------------------
+# A reinstall keeps the current ubonsole.conf values; flags and answers override them
+CONF="$I3_DIR/ubonsole.conf"
+declare -A OLD=()
+if [ -f "$CONF" ]; then
+  while IFS='=' read -r k v; do OLD[$k]=$v; done < <(grep -E '^[A-Z0-9_]+=' "$CONF")
+  say "Keeping the settings from $CONF"
+fi
+old() { echo "${OLD[$1]:-}"; }
+
 # --- Language ---------------------------------------------------------------
 if [ -z "$UB_LANG" ]; then
+  DEF=$(old UBONSOLE_LANG); DEF=${DEF:-en}
   if [ "$YES" = 1 ]; then
-    UB_LANG=en
+    UB_LANG=$DEF
   else
     echo "Interface language:"
-    for i in "${!LANGS[@]}"; do echo "  $((i + 1))) ${LANG_NAMES[$i]} (${LANGS[$i]})"; done
-    read -rp "Choice [1]: " n
-    n=${n:-1}
+    DEFN=1
+    for i in "${!LANGS[@]}"; do
+      echo "  $((i + 1))) ${LANG_NAMES[$i]} (${LANGS[$i]})"
+      [ "${LANGS[$i]}" = "$DEF" ] && DEFN=$((i + 1))
+    done
+    read -rp "Choice [$DEFN]: " n
+    n=${n:-$DEFN}
     [[ $n =~ ^[1-4]$ ]] || { echo "Invalid choice" >&2; exit 1; }
     UB_LANG=${LANGS[$((n - 1))]}
   fi
@@ -62,11 +77,13 @@ say "Language: $UB_LANG"
 # --- Region (frequency cheat sheet) -------------------------------------------
 # Band plans and rules differ by country: pick where the device is used
 if [ -z "$UB_REGION" ]; then
-  case $UB_LANG in fr|de|es) DEF=$UB_LANG ;; *) DEF=eu ;; esac
+  DEF=$(old UBONSOLE_REGION)
+  [ -z "$DEF" ] && case $UB_LANG in fr|de|es) DEF=$UB_LANG ;; *) DEF=eu ;; esac
   if [ "$YES" = 1 ]; then
     UB_REGION=$DEF
   else
     echo "Region for the SDR frequency cheat sheet:"
+    DEFN=7
     for i in "${!REGIONS[@]}"; do
       echo "  $((i + 1))) ${REGION_NAMES[$i]} (${REGIONS[$i]})"
       [ "${REGIONS[$i]}" = "$DEF" ] && DEFN=$((i + 1))
@@ -118,20 +135,80 @@ mkdir -p "$I3_DIR"
 cp -r "$REPO/config/i3/." "$I3_DIR/"
 chmod +x "$I3_DIR"/scripts/*
 
-AIOV2_CTL=""
-for p in "$HOME/aiov2_ctl/aiov2_ctl.py" /usr/local/bin/aiov2_ctl; do
-  [ -f "$p" ] && { AIOV2_CTL=$p; break; }
-done
-cat > "$I3_DIR/ubonsole.conf" <<EOF
-# uBonsole settings (read by ~/.config/i3/scripts/i18n.sh)
+# --- Settings (ubonsole.conf) ---------------------------------------------------
+# Detected values are only used when the setting is not already set
+AIOV2_CTL=$(old AIOV2_CTL)
+if [ -z "$AIOV2_CTL" ]; then
+  if command -v aiov2_ctl >/dev/null 2>&1; then AIOV2_CTL=aiov2_ctl
+  elif [ -f "$HOME/aiov2_ctl/aiov2_ctl.py" ]; then AIOV2_CTL=$HOME/aiov2_ctl/aiov2_ctl.py; fi
+fi
+ADSB_SERVICE=$(old ADSB_SERVICE)
+if [ -z "$ADSB_SERVICE" ]; then
+  ADSB_SERVICE=readsb
+  for s in readsb dump1090-fa dump1090-mutability dump1090; do
+    systemctl cat "$s.service" >/dev/null 2>&1 && { ADSB_SERVICE=$s; break; }
+  done
+fi
+AUTORX_DIR=$(old AUTORX_DIR)
+if [ -z "$AUTORX_DIR" ]; then
+  AUTORX_DIR=$HOME/src/radiosonde_auto_rx/auto_rx
+  for d in "$HOME/src/radiosonde_auto_rx/auto_rx" "$HOME/radiosonde_auto_rx/auto_rx"; do
+    [ -f "$d/auto_rx.py" ] && { AUTORX_DIR=$d; break; }
+  done
+fi
+BATTERY=$(old BATTERY)
+if [ -z "$BATTERY" ]; then
+  BATTERY=/sys/class/power_supply/axp20x-battery
+  for b in /sys/class/power_supply/*; do
+    [ "$(cat "$b/type" 2>/dev/null)" = Battery ] && { BATTERY=$b; break; }
+  done
+fi
+SDR_DEVICE=$(old SDR_DEVICE); SDR_GAIN=$(old SDR_GAIN); TAR1090_URL=$(old TAR1090_URL)
+
+cat > "$CONF" <<EOF
+# uBonsole settings, read by ~/.config/i3/scripts/common.sh on every click.
+# install.sh keeps these values when you reinstall or update.
+
 # Interface language: en, fr, de, es
 UBONSOLE_LANG=$UB_LANG
 # Frequency cheat sheet region: fr, uk, de, es, us, ca, eu (other Europe)
 UBONSOLE_REGION=$UB_REGION
-# HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails); empty = not available
+
+# HackerGadgets AIO v2 control tool (GPS / LoRa / SDR / USB rails): the "aiov2_ctl" command or the
+# path to aiov2_ctl.py. Empty = no AIO v2 board (those toggles are hidden).
 AIOV2_CTL=$AIOV2_CTL
+
+# RTL-SDR used by the text decoders (ACARS, VDL2, APRS, rtl_433): device index (rtl_test lists them)
+# and tuner gain in dB. GQRX, SDR++, SatDump and auto_rx pick their device in their own settings.
+SDR_DEVICE=${SDR_DEVICE:-0}
+SDR_GAIN=${SDR_GAIN:-40}
+
+# ADS-B: systemd service of the decoder (readsb, dump1090-fa...) and the tar1090 page
+ADSB_SERVICE=$ADSB_SERVICE
+TAR1090_URL=${TAR1090_URL:-http://localhost/tar1090}
+
+# radiosonde_auto_rx folder (the one containing auto_rx.py)
+AUTORX_DIR=$AUTORX_DIR
+
+# Battery shown in the bar and the power menu
+BATTERY=$BATTERY
 EOF
-[ -z "$AIOV2_CTL" ] && say "aiov2_ctl not found: GPS/LoRa/SDR/USB toggles are hidden in the power menu."
+
+# --- What is available --------------------------------------------------------
+has() { command -v "$1" >/dev/null 2>&1; }
+FOUND=() ABSENT=()
+for c in gqrx sdrpp satdump-ui acarsdec dumpvdl2 direwolf rtl_fm rtl_433 meshcore-console xgps; do
+  if has "$c"; then FOUND+=("$c"); else ABSENT+=("$c"); fi
+done
+systemctl cat "$ADSB_SERVICE.service" >/dev/null 2>&1 && FOUND+=("$ADSB_SERVICE (ADS-B)") || ABSENT+=("$ADSB_SERVICE (ADS-B)")
+[ -f "$AUTORX_DIR/auto_rx.py" ] && FOUND+=(auto_rx) || ABSENT+=(auto_rx)
+say "Radio apps found: ${FOUND[*]:-none}"
+[ ${#ABSENT[@]} -gt 0 ] && echo "    Not found (shown as not installed in the menu): ${ABSENT[*]}"
+if [ -n "$AIOV2_CTL" ]; then
+  say "AIO v2 control: $AIOV2_CTL"
+else
+  say "aiov2_ctl not found: GPS/LoRa/SDR/USB toggles are hidden (https://github.com/hackergadgets/aiov2_ctl)"
+fi
 
 mkdir -p "$HOME/.config/direwolf"
 cp "$REPO/config/direwolf/sdr.conf" "$HOME/.config/direwolf/sdr.conf"

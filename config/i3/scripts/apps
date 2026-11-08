@@ -1,9 +1,9 @@
 #!/bin/bash
 # i3blocks: ear = radio app launcher. Shows which SDR app is running.
-. ~/.config/i3/scripts/i18n.sh
+. ~/.config/i3/scripts/common.sh
 [ -n "$BLOCK_BUTTON" ] && setsid -f ~/.config/i3/scripts/sdr-menu >/dev/null 2>&1
 ACTIVE=""
-systemctl is-active -q readsb && ACTIVE="ADS-B"
+systemctl is-active -q "$ADSB_SERVICE" && ACTIVE="ADS-B"
 for p in gqrx:GQRX sdrpp:SDR++ satdump-ui:SatDump rtl_433:433 acarsdec:ACARS dumpvdl2:VDL2 direwolf:APRS; do
   pgrep -x "${p%%:*}" >/dev/null && ACTIVE="${p#*:}"
 done

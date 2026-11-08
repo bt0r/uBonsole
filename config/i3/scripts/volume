@@ -1,6 +1,6 @@
 #!/bin/bash
 # i3blocks: volume. Left click = mute, wheel = +/- 5 %
-. ~/.config/i3/scripts/i18n.sh
+. ~/.config/i3/scripts/common.sh
 SINK=@DEFAULT_AUDIO_SINK@
 case $BLOCK_BUTTON in
   1) wpctl set-mute "$SINK" toggle ;;

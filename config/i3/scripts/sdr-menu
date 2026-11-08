@@ -1,22 +1,20 @@
 #!/bin/bash
 # Radio app launcher (rofi). Only one SDR app at a time: the dongle is freed before each launch.
-. ~/.config/i3/scripts/i18n.sh
-AIO=(python3 "$AIOV2_CTL")
-AUTORX="$HOME/src/radiosonde_auto_rx/auto_rx"
+. ~/.config/i3/scripts/common.sh
 pkill -f "rofi -dmenu -p radio" && exit 0
 
 THEME=(-theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } listview { lines: 12; } mainbox { children: [ listview ]; }')
 
 has() { command -v "$1" >/dev/null 2>&1; }
 mark() { has "$1" || echo "  $L_NOT_INSTALLED"; }
-aio() { [ -f "$AIOV2_CTL" ] && "${AIO[@]}" "$@" >/dev/null 2>&1; }
 
 free_sdr() {
   pkill -x gqrx; pkill -x sdrpp; pkill -x satdump-ui; pkill -x satdump
   pkill -x rtl_433; pkill -x rtl_fm; pkill -x acarsdec; pkill -x dumpvdl2; pkill -x direwolf
   pkill -f auto_rx.py; pkill -f scripts/adsb
-  systemctl is-active -q readsb && sudo -n systemctl stop readsb
-  if [ -f "$AIOV2_CTL" ] && ! "${AIO[@]}" | grep -q '^SDR: ON'; then aio SDR on; sleep 2; fi
+  systemctl is-active -q "$ADSB_SERVICE" && sudo -n systemctl stop "$ADSB_SERVICE"
+  # Power the AIO v2 SDR if it is off (no-op without the board)
+  if has_aio && ! aio 2>/dev/null | grep -q '^SDR: ON'; then aio SDR on >/dev/null 2>&1; sleep 2; fi
   sleep 1
 }
 # Text-mode decoder in a terminal (workspace 3) that stays open when it exits
@@ -34,7 +32,7 @@ ITEMS=(
   "GQRX$(mark gqrx)"
   "SDR++$(mark sdrpp)"
   "$L_APP_SATDUMP$(mark satdump-ui)"
-  "$L_APP_SONDES$([ -f "$AUTORX/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
+  "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
   "$L_APP_ACARS$(mark acarsdec)"
   "$L_APP_VDL2$(mark dumpvdl2)"
   "$L_APP_APRS$(mark direwolf)"
@@ -51,18 +49,18 @@ case $CHOICE in
   1) has gqrx || missing GQRX; free_sdr; setsid -f gqrx >/dev/null 2>&1 ;;
   2) has sdrpp || missing SDR++; free_sdr; setsid -f sdrpp >/dev/null 2>&1 ;;
   3) has satdump-ui || missing SatDump; free_sdr; setsid -f satdump-ui >/dev/null 2>&1 ;;
-  4) [ -f "$AUTORX/auto_rx.py" ] || missing radiosonde_auto_rx; free_sdr
-     term "Radiosondes" "cd '$AUTORX' && ./venv/bin/python auto_rx.py" "400-406 MHz (http://localhost:5000)"
+  4) [ -f "$AUTORX_DIR/auto_rx.py" ] || missing radiosonde_auto_rx; free_sdr
+     term "Radiosondes" "cd '$AUTORX_DIR' && ./venv/bin/python auto_rx.py" "400-406 MHz (http://localhost:5000)"
      (sleep 15; firefox --new-tab http://localhost:5000 >/dev/null 2>&1) & ;;
   5) has acarsdec || missing acarsdec; free_sdr
-     term "ACARS" "acarsdec -o 2 -r 0 131.525 131.725 131.825" "131.525 / 131.725 / 131.825 MHz" ;;
+     term "ACARS" "acarsdec -o 2 -r $SDR_DEVICE 131.525 131.725 131.825" "131.525 / 131.725 / 131.825 MHz" ;;
   6) has dumpvdl2 || missing dumpvdl2; free_sdr
-     term "VDL2" "dumpvdl2 --rtlsdr 0 --gain 40 136725000 136775000 136875000 136975000" "136.725 - 136.975 MHz" ;;
-  7) has direwolf || missing direwolf; free_sdr
-     term "APRS" "rtl_fm -f 144.800M -s 24000 -g 40 - | direwolf -c ~/.config/direwolf/sdr.conf -r 24000 -D 1 -t 0 -" "144.800 MHz" ;;
-  8) has rtl_433 || missing rtl_433; free_sdr; term "433 MHz" "rtl_433 -f 433.92M" "433.92 MHz" ;;
-  9) has meshcore-console || missing Meshcore; aio LORA on; setsid -f meshcore-console >/dev/null 2>&1 ;;
-  10) has xgps || missing xgps; aio GPS on; setsid -f xgps >/dev/null 2>&1 ;;
+     term "VDL2" "dumpvdl2 --rtlsdr $SDR_DEVICE --gain $SDR_GAIN 136725000 136775000 136875000 136975000" "136.725 - 136.975 MHz" ;;
+  7) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm; free_sdr
+     term "APRS" "rtl_fm -d $SDR_DEVICE -f 144.800M -s 24000 -g $SDR_GAIN - | direwolf -c ~/.config/direwolf/sdr.conf -r 24000 -D 1 -t 0 -" "144.800 MHz" ;;
+  8) has rtl_433 || missing rtl_433; free_sdr; term "433 MHz" "rtl_433 -d $SDR_DEVICE -f 433.92M" "433.92 MHz" ;;
+  9) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
+  10) has xgps || missing xgps; aio GPS on >/dev/null 2>&1; setsid -f xgps >/dev/null 2>&1 ;;
   11) free_sdr ;;
 esac
 pkill -RTMIN+13 i3blocks

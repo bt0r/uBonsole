@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# ADS-B: start readsb, open tar1090 in its own Firefox instance, Enter stops everything
-. ~/.config/i3/scripts/i18n.sh
+# ADS-B: start the decoder service ($ADSB_SERVICE), open tar1090 in its own Firefox instance, Enter stops everything
+. ~/.config/i3/scripts/common.sh
 pkill -x gqrx; pkill -x sdrpp
-sudo systemctl start readsb && ~/.config/i3/scripts/tar1090-firefox
-read -rp "$L_ADSB_STOP" && sudo systemctl stop readsb
+sudo systemctl start "$ADSB_SERVICE" && ~/.config/i3/scripts/tar1090-firefox
+read -rp "$L_ADSB_STOP" && sudo systemctl stop "$ADSB_SERVICE"
