@@ -65,7 +65,8 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Brightness | `☀ 22%` | left +1 / right −1 |
 | Volume | speaker icon follows the level | left = mute, wheel = ±5 % |
 | CPU / RAM | fixed-width percentages | |
-| Temperature, Wi-Fi IP, date | | |
+| Temperature, Wi-Fi IP | | |
+| Date and time | in the region's format (`12/31/2026 11:59 PM` in the USA, `31/12/2026 23:59` in France…) | |
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
 **Radio launcher** — ADS-B (readsb + tar1090), GQRX, SDR++, SatDump, radiosondes (auto_rx), ACARS,
@@ -173,6 +174,7 @@ Reinstalling or updating keeps your values.
 |---|---|---|
 | `UBONSOLE_LANG` | `en` | interface language: `en` `fr` `de` `es` |
 | `UBONSOLE_REGION` | from the language | frequency sheet: `fr` `uk` `de` `es` `us` `ca` `eu` |
+| `DATE_FORMAT` | from the region | date and time in the bar, `date` syntax (e.g. `'%a %d %b %H:%M'`). Empty: `31/12/2026 23:59` (fr, uk, es), `31.12.2026 23:59` (de), `12/31/2026 11:59 PM` (us), `2026-12-31 23:59` (ca, eu). The time zone stays the system's |
 | `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white` or `#RRGGBB`. Applied by the installer: change it with `./install.sh --color <name>` |
 | `UBONSOLE_TERMINAL_COLORS` | `no` | same theme in the terminal (text and cursor in the accent color), only if you accept it at install. Applied by the installer: `--terminal-colors` / `--no-terminal-colors` |
 | `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
@@ -281,7 +283,8 @@ tools/recolor.py              accent colors: swaps the reference pink in the ins
 ## Adding a region
 
 Add an entry to `REGIONS` and `TITLE` in `tools/gen-frequencies.py`, run it (it reports any line
-that does not fit the screen), then add the code to `REGIONS` / `REGION_NAMES` in `install.sh`.
+that does not fit the screen), add the code to `REGIONS` / `REGION_NAMES` in `install.sh`, and its
+date format to the `DATE_FORMAT` defaults in `config/i3/scripts/common.sh`.
 
 ## Adding a color
 

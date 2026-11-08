@@ -75,6 +75,9 @@ Update `README.md` in the same commit whenever a change affects users:
 - **New themed file**: add it to the `recolor.py` calls in `install.sh`.
 - **Icons**: FontAwesome 4.7 glyphs, written as `$'\uXXXX'` in scripts (raw glyphs only in
   `config/i3/config` and `i3blocks.conf`, which have no escape syntax).
+- **Regions** drive more than the frequency sheet: a new region also needs its date format in
+  `common.sh`. Anything shown to the user that depends on the country (units, date, time) must
+  follow `UBONSOLE_REGION`, never a hardcoded French or US format.
 - **Hardware**: optional hardware must degrade gracefully (no AIO v2 board, missing app → hidden or
   `(not installed)`, never an error).
 - **Frequency data**: ranges must come from regulators, band plans or official project docs. Mark

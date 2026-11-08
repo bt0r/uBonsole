@@ -231,6 +231,8 @@ if [ -z "$BATTERY" ]; then
   done
 fi
 SDR_DEVICE=$(old SDR_DEVICE); SDR_GAIN=$(old SDR_GAIN); TAR1090_URL=$(old TAR1090_URL)
+# Kept as written (quotes included), empty = follow the region
+DATE_FORMAT=$(old DATE_FORMAT)
 
 cat > "$CONF" <<EOF
 # uBonsole settings, read by ~/.config/i3/scripts/common.sh on every click.
@@ -240,6 +242,9 @@ cat > "$CONF" <<EOF
 UBONSOLE_LANG=$UB_LANG
 # Frequency cheat sheet region: fr, uk, de, es, us, ca, eu (other Europe)
 UBONSOLE_REGION=$UB_REGION
+# Date and time in the bar, date(1) syntax, e.g. '%Y-%m-%d %H:%M'. Empty = usual format of the region:
+# fr/uk/es 31/12/2026 23:59, de 31.12.2026 23:59, us 12/31/2026 11:59 PM, ca/eu 2026-12-31 23:59
+DATE_FORMAT=${DATE_FORMAT:-''}
 # Accent color: pink, blue, red, green, yellow, white or a custom #RRGGBB. Applied by install.sh,
 # so change it with "./install.sh --color <name|#RRGGBB>" rather than here.
 UBONSOLE_COLOR=$UB_COLOR

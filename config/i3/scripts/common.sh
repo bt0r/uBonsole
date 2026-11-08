@@ -15,6 +15,16 @@ TAR1090_URL=${TAR1090_URL:-http://localhost/tar1090}
 AUTORX_DIR=${AUTORX_DIR:-$HOME/src/radiosonde_auto_rx/auto_rx}
 BATTERY=${BATTERY:-/sys/class/power_supply/axp20x-battery}
 
+# Date and time in the bar (date(1) syntax): the region's usual format unless DATE_FORMAT is set
+if [ -z "${DATE_FORMAT:-}" ]; then
+  case $UBONSOLE_REGION in
+    us) DATE_FORMAT='%m/%d/%Y %I:%M %p' ;;
+    de) DATE_FORMAT='%d.%m.%Y %H:%M' ;;
+    ca|eu) DATE_FORMAT='%Y-%m-%d %H:%M' ;;
+    *) DATE_FORMAT='%d/%m/%Y %H:%M' ;;
+  esac
+fi
+
 . "$UBONSOLE_DIR/lang/en.sh"
 if [ "$UBONSOLE_LANG" != en ] && [ -f "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh" ]; then
   . "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh"

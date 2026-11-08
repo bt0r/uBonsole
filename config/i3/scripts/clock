@@ -1,0 +1,9 @@
+#!/bin/bash
+# i3blocks: date and time in the region's usual format (DATE_FORMAT in ubonsole.conf overrides it).
+# %p (AM/PM) is empty in many locales, so formats using it run in the C locale; others keep the
+# system locale for day and month names. The time zone is the system's.
+. ~/.config/i3/scripts/common.sh
+case $DATE_FORMAT in
+  *%p*) LC_ALL=C date "+$DATE_FORMAT" ;;
+  *) date "+$DATE_FORMAT" ;;
+esac
