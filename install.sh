@@ -149,6 +149,8 @@ command -v st >/dev/null 2>&1 || say "Note: the 'st' terminal is not installed (
 # --- Backup -------------------------------------------------------------------
 if [ -d "$I3_DIR" ]; then
   BACKUP="$I3_DIR.backup-$(date +%Y%m%d-%H%M%S)"
+  # Two runs in the same second would otherwise copy into the previous backup
+  n=1; while [ -e "$BACKUP" ]; do BACKUP="$I3_DIR.backup-$(date +%Y%m%d-%H%M%S)-$n"; n=$((n + 1)); done
   cp -a "$I3_DIR" "$BACKUP"
   say "Existing i3 config saved to $BACKUP"
 fi
