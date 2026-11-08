@@ -66,6 +66,7 @@ Non-interactive: `./install.sh --lang en --region us --qt-theme --yes`
 
 Change them later in `~/.config/i3/ubonsole.conf`:
 `UBONSOLE_LANG=en|fr|de|es` and `UBONSOLE_REGION=fr|uk|de|es|us|ca|eu`.
+The scripts read this file on every click, so no restart is needed.
 
 ### Requirements
 
@@ -73,7 +74,76 @@ Change them later in `~/.config/i3/ubonsole.conf`:
 - `st` terminal
 - Optional: HackerGadgets AIO v2 board and `aiov2_ctl` (`~/aiov2_ctl/aiov2_ctl.py`)
 - Optional SDR tools: `tools/install-sdr-tools.sh` (SDR++, SatDump, direwolf, acarsdec, dumpvdl2,
-  radiosonde_auto_rx; readsb + tar1090 for ADS-B are not installed by it)
+  radiosonde_auto_rx). It targets Debian trixie on arm64 and builds part of them from source, which
+  takes a while on a CM4.
+- ADS-B needs **readsb** and **tar1090**, which are not installed by these scripts.
+
+### Update
+
+```bash
+cd uBonsole && git pull && ./install.sh
+```
+
+Each run makes a new backup. The installer copies files but never deletes any, so files from an
+older config stay in `~/.config/i3` until you remove them.
+
+### Uninstall
+
+Put a backup back and restart i3 (`$mod+Shift+r`):
+
+```bash
+rm -rf ~/.config/i3
+mv ~/.config/i3.backup-<date> ~/.config/i3
+```
+
+## Keyboard shortcuts
+
+`$mod` is **Alt**.
+
+| Keys | Action |
+|---|---|
+| `$mod+Return` | terminal (`st`) |
+| `$mod+d` | app launcher |
+| `$mod+1` … `$mod+0` | go to workspace 1–10 (`$mod+Shift+<n>` moves the window there) |
+| `$mod+Home` / `$mod+End`, `$mod+PgUp` / `$mod+PgDn` | first / last, previous / next workspace |
+| `$mod+j k l ;` or arrows | move focus (`$mod+Shift+…` moves the window) |
+| `$mod+h` / `$mod+v` | split horizontally / vertically |
+| `$mod+f` | fullscreen |
+| `$mod+s` / `$mod+w` / `$mod+e` | stacked / tabbed / split layout |
+| `$mod+Shift+space` | toggle floating |
+| `$mod+Shift+p` / `$mod+Shift+m` | snap a floating window to the right / left half |
+| `$mod+r` | resize mode (arrows, then Return or Escape) |
+| `$mod+,` / `$mod+.` | brightness down / up |
+| Volume keys | volume, mute |
+| `Print` | screenshot to `~/Pictures` (`$mod+Print`: active window, `Shift+Print`: selection; add `Ctrl` to copy to the clipboard) |
+| `$mod+Shift+q` | close window |
+| `$mod+Shift+c` / `$mod+Shift+r` / `$mod+Shift+e` | reload config / restart i3 / quit |
+
+## Using the radio apps
+
+- **One app at a time**: the RTL-SDR dongle can only be opened by one program. The launcher stops
+  the running app (and readsb) before starting another; "Stop all" frees the dongle.
+- **sudo**: ADS-B starts and stops the `readsb` service with `sudo`. The ADS-B terminal asks for
+  your password if needed. Other menus only call `sudo -n` (never prompt).
+- **Text decoders** (ACARS, VDL2, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
+  one block per decoded message. A quiet terminal means nothing was received yet: check the antenna,
+  go outside, or confirm activity on the waterfall in GQRX first.
+- **Radiosondes**: auto_rx opens its web map on <http://localhost:5000>. Set your position in
+  `~/src/radiosonde_auto_rx/auto_rx/station.cfg` first.
+- **APRS** is receive-only (`config/direwolf/sdr.conf` uses the placeholder call sign `N0CALL`).
+
+## Troubleshooting
+
+- **A menu does not open**: rofi runs one window at a time. Close the open one with Escape, or click
+  its icon again.
+- **GQRX (or another Qt6 app) is white and hard to read**: run `./install.sh --qt-theme` to apply
+  the dark Qt6 palette, then restart the app.
+- **GPS on the AIO v2 shows nothing**: on some images the GPS UART (`/dev/ttyS0`) is also used by the
+  serial console and a login prompt, so gpsd never gets the NMEA data (`journalctl` shows failed
+  logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, disable
+  `serial-getty@ttyS0`, point gpsd at `/dev/ttyS0` and reboot.
+- **Other hardware**: the config assumes the uConsole: display `DSI-1` (rotated), battery
+  `axp20x-battery`, Wi-Fi `wlan0`. Adjust `config/i3/config` and `i3blocks.conf` for other devices.
 
 ## Layout
 
