@@ -40,7 +40,7 @@ while :; do
   [ -z "$CHOICE" ] && break
   ROW=$CHOICE
   case $CHOICE in
-    0) nmcli radio wifi "$([ "$WIFI" = 1 ] && echo off || echo on)" ;;
+    0) nmcli radio wifi "$([ "$WIFI" = 1 ] && echo off || echo on)"; pkill -RTMIN+14 i3blocks ;;
     1) rf_set bluetooth "$([ "$BT" = 1 ] && echo block || echo unblock)" ;;
     2|3|4|5)
       F=(GPS LORA SDR USB); F=${F[$((CHOICE - 2))]}

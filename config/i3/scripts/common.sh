@@ -14,6 +14,7 @@ ADSB_SERVICE=${ADSB_SERVICE:-readsb}
 TAR1090_URL=${TAR1090_URL:-http://localhost/tar1090}
 AUTORX_DIR=${AUTORX_DIR:-$HOME/src/radiosonde_auto_rx/auto_rx}
 BATTERY=${BATTERY:-/sys/class/power_supply/axp20x-battery}
+WIFI_IFACE=${WIFI_IFACE:-wlan0}
 
 # Date and time in the bar (date(1) syntax): the region's usual format unless DATE_FORMAT is set
 if [ -z "${DATE_FORMAT:-}" ]; then

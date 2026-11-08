@@ -230,6 +230,13 @@ if [ -z "$BATTERY" ]; then
     [ "$(cat "$b/type" 2>/dev/null)" = Battery ] && { BATTERY=$b; break; }
   done
 fi
+WIFI_IFACE=$(old WIFI_IFACE)
+if [ -z "$WIFI_IFACE" ]; then
+  WIFI_IFACE=wlan0
+  for d in /sys/class/net/*; do
+    [ -d "$d/wireless" ] && { WIFI_IFACE=$(basename "$d"); break; }
+  done
+fi
 SDR_DEVICE=$(old SDR_DEVICE); SDR_GAIN=$(old SDR_GAIN); TAR1090_URL=$(old TAR1090_URL)
 # Kept as written (quotes included), empty = follow the region
 DATE_FORMAT=$(old DATE_FORMAT)
@@ -269,6 +276,9 @@ AUTORX_DIR=$AUTORX_DIR
 
 # Battery shown in the bar and the power menu
 BATTERY=$BATTERY
+
+# Wi-Fi interface shown in the bar (IP address)
+WIFI_IFACE=$WIFI_IFACE
 EOF
 
 # --- What is available --------------------------------------------------------

@@ -65,7 +65,8 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Brightness | `☀ 22%` | left +1 / right −1 |
 | Volume | speaker icon follows the level | left = mute, wheel = ±5 % |
 | CPU / RAM | fixed-width percentages | |
-| Temperature, Wi-Fi IP | | |
+| Temperature | | |
+| Wi-Fi | IP when connected, icon alone when not connected, crossed-out icon when Wi-Fi is off | right = copy the IP |
 | Date and time | in the region's format (`12/31/2026 11:59 PM` in the USA, `31/12/2026 23:59` in France…) | |
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
@@ -184,6 +185,7 @@ Reinstalling or updating keeps your values.
 | `TAR1090_URL` | `http://localhost/tar1090` | page opened for ADS-B |
 | `AUTORX_DIR` | detected | radiosonde_auto_rx folder (the one with `auto_rx.py`) |
 | `BATTERY` | detected | battery in `/sys/class/power_supply` |
+| `WIFI_IFACE` | detected | Wi-Fi interface shown in the bar (`wlan0` on the uConsole) |
 
 ### Other hardware, antennas and dongles
 
@@ -194,8 +196,8 @@ Reinstalling or updating keeps your values.
   GQRX, SDR++ and SatDump choose their device in their own settings, auto_rx in `station.cfg`,
   readsb in its own config (`/etc/default/readsb`).
 - **No AIO v2 board**: leave `AIOV2_CTL` empty. Everything else works the same.
-- **Not a uConsole**: the i3 config rotates the display `DSI-1` and the Wi-Fi block reads `wlan0`;
-  adjust `config/i3/config` and `config/i3/i3blocks.conf`.
+- **Not a uConsole**: the i3 config rotates the display `DSI-1`: adjust `config/i3/config`. The Wi-Fi
+  interface and the battery are settings (`WIFI_IFACE`, `BATTERY`), detected at install.
 
 ## Keyboard shortcuts
 
