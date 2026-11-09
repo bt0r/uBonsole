@@ -71,9 +71,10 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
 **Radio launcher** — ADS-B (readsb + tar1090), GQRX, SDR++, SatDump, radiosondes (auto_rx), ACARS,
-VDL2, APRS (direwolf), 433 MHz sensors (rtl_433), Meshcore, GPS. Only one app can use the SDR dongle,
-so the launcher stops the running one first. Text-mode decoders open in a terminal on workspace 3.
-Missing apps are flagged `(not installed)`.
+VDL2, APRS (direwolf), FT8 / FT4 (WSJT-X), SSTV (QSSTV), Morse / RTTY / NAVTEX (fldigi), 433 MHz
+sensors (rtl_433), Meshcore, GPS. Only one app can use the SDR dongle, so the launcher stops the
+running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
+`(not installed)`. Everything decodes locally: no internet connection is needed.
 
 **Power menu** — shows battery level, state and power draw, and toggles Wi-Fi, Bluetooth and the
 AIO v2 rails (GPS, LoRa, SDR, USB, via [aiov2_ctl](https://github.com/hackergadgets/aiov2_ctl)).
@@ -135,6 +136,10 @@ Optional, per radio app. A missing app is shown as `(not installed)` in the laun
 | Radiosondes | radiosonde_auto_rx, built from source in `~/src` | yes |
 | ADS-B | `readsb` (or `dump1090-fa`) + `tar1090` | no, see their install scripts |
 | Meshcore | `meshcore-console` ([meshcore-uconsole](https://github.com/cwill747/meshcore-uconsole)) | no |
+| FT8 / FT4 | WSJT-X, official `.deb` from [GitHub](https://github.com/WSJTX/wsjtx/releases) (3.0.2) | yes |
+| SSTV | `qsstv` | yes |
+| Morse, RTTY, NAVTEX | `fldigi` | yes |
+| Audio modes (the three above) | `rtl-sdr` (`rtl_fm`) + `pipewire-bin` (`pw-loopback`, `pw-cat`, `pw-dump`), PipeWire audio | yes |
 | GPS | `gpsd` + `gpsd-clients` (`xgps`) | no |
 
 `tools/install-sdr-tools.sh` targets Debian trixie on arm64 and builds part of the tools from
@@ -246,6 +251,39 @@ Reinstalling or updating keeps your values.
 - **Radiosondes**: auto_rx opens its web map on <http://localhost:5000>. Set your position in
   `~/src/radiosonde_auto_rx/auto_rx/station.cfg` first.
 - **APRS** is receive-only (`config/direwolf/sdr.conf` uses the placeholder call sign `N0CALL`).
+- **Audio modes** (FT8 / FT4, SSTV, fldigi): each entry asks for a frequency, then `rtl_fm`
+  demodulates it into a virtual audio cable "uBonsole SDR" (`scripts/sdr-audio`, PipeWire only),
+  which is the default input while the mode runs. WSJT-X, QSSTV and fldigi record from it without any
+  setting: the launcher writes their audio input before starting them, turns PSK Reporter off (nothing
+  is uploaded) and skips fldigi's first-run wizard. Switching mode or "Stop all" closes the decoder,
+  removes the cable and restores your default input. "Other frequency…" takes any frequency and
+  demodulation.
+- **HF** (below 24 MHz: FT8 on 20 / 40 m, SSTV on 14.230 MHz, NAVTEX, CW, RTTY) uses the R820T
+  direct sampling mode (`rtl_fm -E direct2`). It needs a long wire antenna; 2 m and 6 m work with
+  the usual antennas.
+- **FT8 / FT4 need an accurate clock** (within about 1 s). WSJT-X has no rig control here: the band
+  shown in its window is a label only, the SDR frequency is the one picked in the launcher.
+
+## Offline use
+
+Everything decodes locally. What needs a connection now and then:
+
+- **Clock** for FT8 / FT4: NTP when online; offline, the GPS of the AIO v2 board through gpsd and
+  chrony, plus the board's battery-backed RTC (PCF85063). This is system setup, not done by
+  `install.sh`:
+  1. Free the GPS serial port (see "GPS on the AIO v2 shows nothing" below).
+  2. `/etc/default/gpsd`: `DEVICES="/dev/ttyS0"` and `GPSD_OPTIONS="-n -s 9600"` (the u-blox module
+     talks at 9600 baud; gpsd's speed detection fails on this port).
+  3. `/etc/chrony/conf.d/gps.conf`: `refclock SHM 0 refid GPS precision 1e-1 offset 0.0 delay 0.2`
+     and `makestep 1 -1` (step the clock whenever the GPS gets a fix).
+  4. `/boot/firmware/config.txt`: `dtoverlay=i2c-rtc,pcf85063a` for the RTC, then reboot.
+  5. Power the GPS at boot: `sudo python3 ~/aiov2_ctl/aiov2_ctl.py --install` then
+     `aiov2_ctl --boot-rail GPS on`.
+- **SatDump** downloads satellite orbits (TLE) from CelesTrak when it starts and keeps them in
+  `~/.config/satdump/satdump_tles.txt`. They stay usable for one to two weeks: start SatDump once
+  with a connection (a phone hotspot is enough) before leaving.
+- **Maps** of tar1090 and auto_rx load their tiles online: offline, aircraft and balloons still show,
+  on an empty background.
 
 ## Troubleshooting
 
@@ -267,8 +305,14 @@ Reinstalling or updating keeps your values.
   `./install.sh --no-terminal-colors`.
 - **GPS on the AIO v2 shows nothing**: on some images the GPS UART (`/dev/ttyS0`) is also used by the
   serial console and a login prompt, so gpsd never gets the NMEA data (`journalctl` shows failed
-  logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, disable
-  `serial-getty@ttyS0`, point gpsd at `/dev/ttyS0` and reboot.
+  logins like `$GNGGA…`). Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`, mask
+  `serial-getty@ttyS0`, point gpsd at `/dev/ttyS0` at 9600 baud and reboot (see "Offline use").
+  Indoors, a first fix can take several minutes or never come: go near a window or outside.
+- **FT8 / FT4 decode nothing**: check the clock first (`chronyc tracking`; in WSJT-X, the DT column of
+  decoded stations should stay within ±1 s), then the antenna. On HF, direct sampling is weak with a
+  short antenna.
+- **WSJT-X shows "default (Not found)" as audio input**: start it from the radio launcher, which creates
+  the virtual cable first and selects `ubonsole_sdr_in`.
 - **A decoder says "usb_claim_interface error" or finds no device**: another app still holds the
   dongle (use "Stop all"), or `SDR_DEVICE` points to a dongle that is not plugged in.
 
@@ -278,7 +322,8 @@ Reinstalling or updating keeps your values.
 config/i3/config              i3 config
 config/i3/i3blocks.conf       status bar blocks
 config/i3/scripts/            block scripts, menus, launcher, rofi theme (common.sh: settings + helpers,
-                              gamepad-buttons: SELECT button listener)
+                              gamepad-buttons: SELECT button listener,
+                              sdr-audio: virtual audio cable for the audio decoders)
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
 config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper

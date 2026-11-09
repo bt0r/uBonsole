@@ -284,7 +284,7 @@ EOF
 # --- What is available --------------------------------------------------------
 has() { command -v "$1" >/dev/null 2>&1; }
 FOUND=() ABSENT=()
-for c in gqrx sdrpp satdump-ui acarsdec dumpvdl2 direwolf rtl_fm rtl_433 meshcore-console xgps; do
+for c in gqrx sdrpp satdump-ui acarsdec dumpvdl2 direwolf wsjtx qsstv fldigi rtl_fm rtl_433 meshcore-console xgps; do
   if has "$c"; then FOUND+=("$c"); else ABSENT+=("$c"); fi
 done
 systemctl cat "$ADSB_SERVICE.service" >/dev/null 2>&1 && FOUND+=("$ADSB_SERVICE (ADS-B)") || ABSENT+=("$ADSB_SERVICE (ADS-B)")

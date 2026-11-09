@@ -8,4 +8,7 @@ for p in gqrx:GQRX sdrpp:SDR++ satdump-ui:SatDump rtl_433:433 acarsdec:ACARS dum
   pgrep -x "${p%%:*}" >/dev/null && ACTIVE="${p#*:}"
 done
 pgrep -f auto_rx.py >/dev/null && ACTIVE="$L_ACTIVE_SONDES"
+# Audio modes (FT8, SSTV, fldigi...): rtl_fm feeds the virtual audio cable
+MODE_FILE="${XDG_RUNTIME_DIR:-/tmp}/ubonsole-audio-mode"
+pgrep -f "pw-cat --playback --raw --target ubonsole_sdr" >/dev/null && [ -f "$MODE_FILE" ] && ACTIVE=$(cat "$MODE_FILE")
 echo $'\uf2a2'"${ACTIVE:+ $ACTIVE}"

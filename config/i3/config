@@ -125,6 +125,8 @@ assign [class="(?i)gqrx"] $ws3
 assign [class="(?i)sdr\+\+|sdrpp"] $ws3
 assign [class="(?i)satdump"] $ws3
 assign [class="^sdr-term$"] $ws3
+# Audio decoders (WSJT-X windows have the class "WSJT-X")
+assign [class="(?i)^(wsjt-x|qsstv|fldigi)$"] $ws3
 
 # ADS-B: dedicated Firefox instance (X class "tar1090") -> workspace 4. The terminal that only asks for
 # the sudo password (when needed) floats on the current workspace so it is seen.

@@ -3,7 +3,7 @@
 . ~/.config/i3/scripts/common.sh
 pkill -f "rofi -dmenu -p radio" && exit 0
 
-THEME=(-theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } listview { lines: 12; } mainbox { children: [ listview ]; }')
+THEME=(-theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } listview { lines: 15; } mainbox { children: [ listview ]; }')
 
 has() { command -v "$1" >/dev/null 2>&1; }
 mark() { has "$1" || echo "  $L_NOT_INSTALLED"; }
@@ -12,10 +12,19 @@ free_sdr() {
   pkill -x gqrx; pkill -x sdrpp; pkill -x satdump-ui; pkill -x satdump
   pkill -x rtl_433; pkill -x rtl_fm; pkill -x acarsdec; pkill -x dumpvdl2; pkill -x direwolf
   pkill -f auto_rx.py; pkill -f scripts/adsb
+  close_decoders
+  ~/.config/i3/scripts/sdr-audio stop
   systemctl is-active -q "$ADSB_SERVICE" && sudo -n systemctl stop "$ADSB_SERVICE"
   # Power the AIO v2 SDR if it is off (no-op without the board)
   if has_aio && ! aio 2>/dev/null | grep -q '^SDR: ON'; then aio SDR on >/dev/null 2>&1; sleep 2; fi
   sleep 1
+}
+# Audio decoders listen to the SDR through the virtual cable: they go with it. WSJT-X is closed
+# through i3 so it saves its settings; QSSTV would ask for confirmation, so it gets SIGTERM.
+close_decoders() {
+  i3-msg -q '[class="WSJT-X"] kill' >/dev/null 2>&1
+  pkill -x qsstv; pkill -x fldigi
+  for _ in $(seq 25); do pgrep -x '(wsjtx|qsstv|fldigi)' >/dev/null || break; sleep 0.2; done
 }
 # Text-mode decoder in a terminal (workspace 3) that stays open when it exits
 term() {
@@ -24,43 +33,154 @@ term() {
   BANNER=$(printf "$L_LISTENING" "$3") CLOSE=$L_PRESS_ENTER_CLOSE \
     setsid -f st -c sdr-term -t "$1" -e bash -c 'echo "$BANNER"; echo; '"$2"'; read -rp "$CLOSE"' >/dev/null 2>&1
 }
+# Audio modes: rtl_fm demodulates into the virtual audio cable (scripts/sdr-audio), which is the
+# default input while it runs, so WSJT-X / QSSTV / fldigi hear the SDR without any setting.
+# audio_rx <MHz> <usb|lsb|am|fm> <label shown by the ear block>
+audio_rx() {
+  local rate=12000 extra=""
+  [ "$2" = fm ] && rate=24000
+  # Below 24 MHz the R820T tuner needs direct sampling (HF)
+  awk -v f="$1" 'BEGIN { exit !(f < 24) }' && extra="-E direct2"
+  ~/.config/i3/scripts/sdr-audio start
+  echo "$3" > "${XDG_RUNTIME_DIR:-/tmp}/ubonsole-audio-mode"
+  setsid -f bash -c "rtl_fm -d $SDR_DEVICE -M $2 -f ${1}M -s $rate -g $SDR_GAIN $extra - 2>/dev/null \
+    | pw-cat --playback --raw --target ubonsole_sdr --rate $rate --channels 1 --format s16 - 2>/dev/null"
+}
+# pick <prompt> <lines...>: small submenu, prints the chosen index
+pick() {
+  local prompt=$1; shift
+  printf '%s\n' "$@" | rofi -dmenu -p "$prompt" -i -no-custom -format i "${THEME[@]}" \
+    -theme-str "listview { lines: $#; }"
+}
+# Other frequency: asks MHz and demodulation, then starts audio_rx
+custom_rx() {
+  local f m
+  f=$(rofi -dmenu -p "$L_FREQ_PROMPT" "${THEME[@]}" -theme-str 'mainbox { children: [ inputbar ]; }' </dev/null | tr ',' '.')
+  [[ $f =~ ^[0-9]+(\.[0-9]+)?$ ]] || exit 0
+  m=$(printf '%s\n' usb lsb am fm | rofi -dmenu -p "$L_MODE_PROMPT" -no-custom "${THEME[@]}" -theme-str 'listview { lines: 4; }')
+  [ -n "$m" ] && audio_rx "$f" "$m" "$1"
+}
+# WSJT-X: receive-only defaults, written before it starts (it rewrites its settings on exit)
+wsjtx_prepare() {
+  python3 - "$1" <<'WSJTX'
+import configparser, os, sys
+path = os.path.expanduser("~/.config/WSJT-X.ini")
+c = configparser.RawConfigParser(); c.optionxform = str
+c.read(path)
+for section in ("Common", "Configuration"):
+    if not c.has_section(section):
+        c.add_section(section)
+c.set("Common", "Mode", sys.argv[1])
+c.set("Configuration", "PSKReporter", "false")          # never upload what is received
+# WSJT-X lists PulseAudio source names: record from the virtual cable created by sdr-audio
+c.set("Configuration", "SoundInName", "ubonsole_sdr_in")
+with open(path, "w") as f:
+    c.write(f, space_around_delimiters=False)
+WSJTX
+}
+# fldigi: without a settings file it opens a first-run wizard and records nothing. Make sure it
+# records from PulseAudio (the default input = the virtual cable) and never spots online.
+fldigi_prepare() {
+  python3 - <<'FLDIGI'
+import os, re
+path = os.path.expanduser("~/.fldigi/fldigi_def.xml")
+os.makedirs(os.path.dirname(path), exist_ok=True)
+want = {"AUDIOIO": "2", "PULSESERVER": "", "PSKREPAUTO": "0", "PSKREP_AUTOSTART": "0"}   # 2 = PulseAudio
+xml = open(path).read() if os.path.exists(path) else '<?xml version="1.0" encoding="UTF-8"?>\n<FLDIGI_DEFS>\n</FLDIGI_DEFS>\n'
+for tag, value in want.items():
+    if re.search(r"<%s>.*?</%s>" % (tag, tag), xml, re.S):
+        xml = re.sub(r"<%s>.*?</%s>" % (tag, tag), "<%s>%s</%s>" % (tag, value, tag), xml, flags=re.S)
+    else:
+        xml = xml.replace("</FLDIGI_DEFS>", "<%s>%s</%s>\n</FLDIGI_DEFS>" % (tag, value, tag))
+open(path, "w").write(xml)
+FLDIGI
+}
+# QSSTV: record from PulseAudio (the default input = the virtual cable)
+qsstv_prepare() {
+  python3 - <<'QSSTV'
+import configparser, os
+path = os.path.expanduser("~/.config/ON4QZ/qsstv_9.0.conf")
+os.makedirs(os.path.dirname(path), exist_ok=True)
+c = configparser.RawConfigParser(); c.optionxform = str
+c.read(path)
+if not c.has_section("SOUND"):
+    c.add_section("SOUND")
+c.set("SOUND", "pulseSelected", "true")
+c.set("SOUND", "alsaSelected", "false")
+c.set("SOUND", "soundRoutingInput", "0")
+with open(path, "w") as f:
+    c.write(f, space_around_delimiters=False)
+QSSTV
+}
+# Audio modes need rtl_fm and the PipeWire tools (pipewire-bin) for the virtual cable
+need_audio() {
+  has rtl_fm || missing rtl_fm
+  for t in pw-loopback pw-cat pw-dump wpctl; do has "$t" || missing "$t (PipeWire)"; done
+}
+start_app() { pgrep -x "$1" >/dev/null || setsid -f "$1" >/dev/null 2>&1; }
+
 # shellcheck disable=SC2059
 missing() { rofi -e "$(printf "$L_IS_NOT_INSTALLED" "$1")" "${THEME[@]}"; exit 0; }
 
 ITEMS=(
-  "$L_APP_ADSB"
-  "GQRX$(mark gqrx)"
-  "SDR++$(mark sdrpp)"
-  "$L_APP_SATDUMP$(mark satdump-ui)"
-  "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
-  "$L_APP_ACARS$(mark acarsdec)"
-  "$L_APP_VDL2$(mark dumpvdl2)"
-  "$L_APP_APRS$(mark direwolf)"
-  "$L_APP_433$(mark rtl_433)"
-  "$L_APP_MESHCORE$(mark meshcore-console)"
-  "$L_APP_GPS$(mark xgps)"
-  "$L_APP_STOP"
+  adsb "$L_APP_ADSB"
+  gqrx "GQRX$(mark gqrx)"
+  sdrpp "SDR++$(mark sdrpp)"
+  satdump "$L_APP_SATDUMP$(mark satdump-ui)"
+  sondes "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
+  acars "$L_APP_ACARS$(mark acarsdec)"
+  vdl2 "$L_APP_VDL2$(mark dumpvdl2)"
+  aprs "$L_APP_APRS$(mark direwolf)"
+  ft8 "$L_APP_FT8$(mark wsjtx)"
+  sstv "$L_APP_SSTV$(mark qsstv)"
+  fldigi "$L_APP_FLDIGI$(mark fldigi)"
+  ism "$L_APP_433$(mark rtl_433)"
+  meshcore "$L_APP_MESHCORE$(mark meshcore-console)"
+  gps "$L_APP_GPS$(mark xgps)"
+  stop "$L_APP_STOP"
 )
-CHOICE=$(printf '%s\n' "${ITEMS[@]}" | rofi -dmenu -p radio -i -no-custom -format i "${THEME[@]}")
+IDS=(); LABELS=()
+for ((i = 0; i < ${#ITEMS[@]}; i += 2)); do IDS+=("${ITEMS[i]}"); LABELS+=("${ITEMS[i + 1]}"); done
+CHOICE=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p radio -i -no-custom -format i "${THEME[@]}")
 [ -z "$CHOICE" ] && exit 0
 
-case $CHOICE in
-  0) free_sdr; setsid -f ~/.config/i3/scripts/adsb >/dev/null 2>&1 ;;
-  1) has gqrx || missing GQRX; free_sdr; setsid -f gqrx >/dev/null 2>&1 ;;
-  2) has sdrpp || missing SDR++; free_sdr; setsid -f sdrpp >/dev/null 2>&1 ;;
-  3) has satdump-ui || missing SatDump; free_sdr; setsid -f satdump-ui >/dev/null 2>&1 ;;
-  4) [ -f "$AUTORX_DIR/auto_rx.py" ] || missing radiosonde_auto_rx; free_sdr
+case ${IDS[$CHOICE]} in
+  adsb) free_sdr; setsid -f ~/.config/i3/scripts/adsb >/dev/null 2>&1 ;;
+  gqrx) has gqrx || missing GQRX; free_sdr; setsid -f gqrx >/dev/null 2>&1 ;;
+  sdrpp) has sdrpp || missing SDR++; free_sdr; setsid -f sdrpp >/dev/null 2>&1 ;;
+  satdump) has satdump-ui || missing SatDump; free_sdr; setsid -f satdump-ui >/dev/null 2>&1 ;;
+  sondes) [ -f "$AUTORX_DIR/auto_rx.py" ] || missing radiosonde_auto_rx; free_sdr
      term "Radiosondes" "cd '$AUTORX_DIR' && ./venv/bin/python auto_rx.py" "400-406 MHz (http://localhost:5000)"
      (sleep 15; firefox --new-tab http://localhost:5000 >/dev/null 2>&1) & ;;
-  5) has acarsdec || missing acarsdec; free_sdr
+  acars) has acarsdec || missing acarsdec; free_sdr
      term "ACARS" "acarsdec -o 2 -r $SDR_DEVICE 131.525 131.725 131.825" "131.525 / 131.725 / 131.825 MHz" ;;
-  6) has dumpvdl2 || missing dumpvdl2; free_sdr
+  vdl2) has dumpvdl2 || missing dumpvdl2; free_sdr
      term "VDL2" "dumpvdl2 --rtlsdr $SDR_DEVICE --gain $SDR_GAIN 136725000 136775000 136875000 136975000" "136.725 - 136.975 MHz" ;;
-  7) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm; free_sdr
+  aprs) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm; free_sdr
      term "APRS" "rtl_fm -d $SDR_DEVICE -f 144.800M -s 24000 -g $SDR_GAIN - | direwolf -c ~/.config/direwolf/sdr.conf -r 24000 -D 1 -t 0 -" "144.800 MHz" ;;
-  8) has rtl_433 || missing rtl_433; free_sdr; term "433 MHz" "rtl_433 -d $SDR_DEVICE -f 433.92M" "433.92 MHz" ;;
-  9) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
-  10) has xgps || missing xgps; aio GPS on >/dev/null 2>&1; setsid -f xgps >/dev/null 2>&1 ;;
-  11) free_sdr ;;
+  ft8) has wsjtx || missing WSJT-X; need_audio
+     # FT8 / FT4 dial frequencies (USB), the same worldwide; below 24 MHz needs HF direct sampling
+     F=(144.174 50.313 28.074 21.074 14.074 7.074 14.080 7.0475)
+     M=(FT8 FT8 FT8 FT8 FT8 FT8 FT4 FT4)
+     N=("2 m" "6 m" "10 m" "15 m" "20 m" "40 m" "20 m" "40 m")
+     L=(); for i in "${!F[@]}"; do L+=("${M[i]} · ${N[i]} · ${F[i]} MHz$(awk -v f="${F[i]}" 'BEGIN { if (f < 24) print "  (HF)" }')"); done
+     k=$(pick FT8 "${L[@]}"); [ -z "$k" ] && exit 0
+     free_sdr; audio_rx "${F[k]}" usb "${M[k]}"
+     wsjtx_prepare "${M[k]}"; start_app wsjtx ;;
+  sstv) has qsstv || missing QSSTV; need_audio
+     k=$(pick SSTV "ISS · 145.800 MHz · FM" "20 m · 14.230 MHz · USB  (HF)" "$L_OTHER_FREQ"); [ -z "$k" ] && exit 0
+     free_sdr
+     case $k in 0) audio_rx 145.800 fm SSTV ;; 1) audio_rx 14.230 usb SSTV ;; *) custom_rx SSTV ;; esac
+     qsstv_prepare; start_app qsstv ;;
+  fldigi) has fldigi || missing fldigi; need_audio
+     # Dial frequencies (USB) put CW about 600 Hz and RTTY / NAVTEX about 1 kHz up in fldigi's waterfall
+     k=$(pick fldigi "NAVTEX · 518 kHz  (HF)" "CW · 20 m · 14.025 MHz  (HF)" "RTTY · 20 m · 14.083 MHz  (HF)" "$L_OTHER_FREQ"); [ -z "$k" ] && exit 0
+     free_sdr
+     case $k in 0) audio_rx 0.517 usb NAVTEX ;; 1) audio_rx 14.0244 usb CW ;; 2) audio_rx 14.082 usb RTTY ;; *) custom_rx fldigi ;; esac
+     fldigi_prepare; start_app fldigi ;;
+  ism) has rtl_433 || missing rtl_433; free_sdr; term "433 MHz" "rtl_433 -d $SDR_DEVICE -f 433.92M" "433.92 MHz" ;;
+  meshcore) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
+  gps) has xgps || missing xgps; aio GPS on >/dev/null 2>&1; setsid -f xgps >/dev/null 2>&1 ;;
+  stop) free_sdr ;;
 esac
 pkill -RTMIN+13 i3blocks
