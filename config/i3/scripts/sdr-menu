@@ -55,7 +55,8 @@ pick() {
 # Other frequency: asks MHz and demodulation, then starts audio_rx
 custom_rx() {
   local f m
-  f=$(rofi -dmenu -p "$L_FREQ_PROMPT" "${THEME[@]}" -theme-str 'mainbox { children: [ inputbar ]; }' </dev/null | tr ',' '.')
+  # rofi 1.7 crashes when a dmenu layout has no listview: keep it, hidden
+  f=$(rofi -dmenu -p "$L_FREQ_PROMPT" -theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } mainbox { children: [ inputbar, listview ]; } listview { enabled: false; }' </dev/null | tr ',' '.')
   [[ $f =~ ^[0-9]+(\.[0-9]+)?$ ]] || exit 0
   m=$(printf '%s\n' usb lsb am fm | rofi -dmenu -p "$L_MODE_PROMPT" -no-custom "${THEME[@]}" -theme-str 'listview { lines: 4; }')
   [ -n "$m" ] && audio_rx "$f" "$m" "$1"
