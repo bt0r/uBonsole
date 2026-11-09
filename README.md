@@ -70,9 +70,10 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Date and time | in the region's format (`12/31/2026 11:59 PM` in the USA, `31/12/2026 23:59` in France…) | |
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
-**Radio launcher** — ADS-B (readsb + tar1090), GQRX, SDR++, SatDump, radiosondes (auto_rx), ACARS,
-VDL2, APRS (direwolf), FT8 / FT4 (WSJT-X), SSTV (QSSTV), Morse / RTTY / NAVTEX (fldigi), 433 MHz
-sensors (rtl_433), Meshcore, GPS. Only one app can use the SDR dongle, so the launcher stops the
+**Radio launcher** — apps grouped by use: aircraft (ADS-B with readsb + tar1090, ACARS, VDL2),
+receivers (GQRX, SDR++), satellites & weather (SatDump, radiosondes with auto_rx), amateur radio
+(APRS with direwolf, FT8 / FT4 with WSJT-X, SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi),
+sensors & mesh (433 MHz with rtl_433, Meshcore, GPS). Only one app can use the SDR dongle, so the launcher stops the
 running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
 `(not installed)`. Everything decodes locally: no internet connection is needed.
 

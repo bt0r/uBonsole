@@ -160,27 +160,48 @@ start_app() { pgrep -x "$1" >/dev/null || setsid -f "$1" >/dev/null 2>&1; }
 # shellcheck disable=SC2059
 missing() { rofi -e "$(printf "$L_IS_NOT_INSTALLED" "$1")" "${THEME[@]}"; exit 0; }
 
+# Apps grouped by use. "#" rows are group titles (bold); picking one shows the menu again.
 ITEMS=(
+  "#" "$L_GRP_AIR"
   adsb "$L_APP_ADSB"
-  gqrx "GQRX$(mark gqrx)"
-  sdrpp "SDR++$(mark sdrpp)"
-  satdump "$L_APP_SATDUMP$(mark satdump-ui)"
-  sondes "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
   acars "$L_APP_ACARS$(mark acarsdec)"
   vdl2 "$L_APP_VDL2$(mark dumpvdl2)"
+  "#" "$L_GRP_RADIO"
+  gqrx "GQRX$(mark gqrx)"
+  sdrpp "SDR++$(mark sdrpp)"
+  "#" "$L_GRP_SAT"
+  satdump "$L_APP_SATDUMP$(mark satdump-ui)"
+  sondes "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
+  "#" "$L_GRP_HAM"
   aprs "$L_APP_APRS$(mark direwolf)"
   ft8 "$L_APP_FT8$(mark wsjtx)"
   sstv "$L_APP_SSTV$(mark qsstv)"
   fldigi "$L_APP_FLDIGI$(mark fldigi)"
+  "#" "$L_GRP_OTHER"
   ism "$L_APP_433$(mark rtl_433)"
   meshcore "$L_APP_MESHCORE$(mark meshcore-console)"
   gps "$L_APP_GPS$(mark xgps)"
+  "#" ""
   stop "$L_APP_STOP"
 )
+markup_escape() { sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' <<< "$1"; }
 IDS=(); LABELS=()
-for ((i = 0; i < ${#ITEMS[@]}; i += 2)); do IDS+=("${ITEMS[i]}"); LABELS+=("${ITEMS[i + 1]}"); done
-CHOICE=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p radio -i -no-custom -format i "${THEME[@]}")
-[ -z "$CHOICE" ] && exit 0
+for ((i = 0; i < ${#ITEMS[@]}; i += 2)); do
+  IDS+=("${ITEMS[i]}")
+  if [ "${ITEMS[i]}" = "#" ]; then
+    LABELS+=("<b>$(markup_escape "${ITEMS[i + 1]}")</b>")
+  else
+    LABELS+=("   $(markup_escape "${ITEMS[i + 1]}")")
+  fi
+done
+ROW=1
+while :; do
+  CHOICE=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p radio -i -no-custom -markup-rows -format i \
+    -selected-row "$ROW" "${THEME[@]}" -theme-str "listview { lines: ${#LABELS[@]}; }")
+  [ -z "$CHOICE" ] && exit 0
+  [ "${IDS[$CHOICE]}" != "#" ] && break
+  ROW=$((CHOICE + 1))   # a group title: back to the menu, on its first app
+done
 
 case ${IDS[$CHOICE]} in
   adsb) pick_sdr; free_sdr; setsid -f ~/.config/i3/scripts/adsb "${DEV_SERIAL:-$DEV_INDEX}" >/dev/null 2>&1 ;;
