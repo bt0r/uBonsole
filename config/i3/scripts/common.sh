@@ -32,6 +32,12 @@ if [ "$UBONSOLE_LANG" != en ] && [ -f "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh" ]; 
 fi
 ROFI_THEME="$UBONSOLE_DIR/scripts/rofi-theme.rasi"
 
+# RTL-SDR dongles, one per line: "index<TAB>serial<TAB>name", in librtlsdr order (as rtl_test lists
+# them, which is also the index the decoders use). Listing does not need the dongles to be free.
+list_sdrs() {
+  timeout 5 rtl_test -t 2>&1 | sed -n 's/^ *\([0-9]\+\): *\(.*\), SN: *\(.*\)$/\1\t\3\t\2/p'
+}
+
 # HackerGadgets AIO v2 rails (GPS / LoRa / SDR / USB). AIOV2_CTL is either a command
 # (installed with "aiov2_ctl --install") or the path to aiov2_ctl.py.
 has_aio() {

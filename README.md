@@ -189,7 +189,7 @@ Reinstalling or updating keeps your values.
 | `UBONSOLE_COLOR` | `pink` | accent color: `pink` `blue` `red` `green` `yellow` `white` or `#RRGGBB`. Applied by the installer: change it with `./install.sh --color <name>` |
 | `UBONSOLE_TERMINAL_COLORS` | `no` | same theme in the terminal (text and cursor in the accent color), only if you accept it at install. Applied by the installer: `--terminal-colors` / `--no-terminal-colors` |
 | `AIOV2_CTL` | detected | `aiov2_ctl` command or path to `aiov2_ctl.py`; empty = no AIO v2 board |
-| `SDR_DEVICE` | `0` | RTL-SDR index used by the text decoders (`rtl_test` lists the dongles) |
+| `SDR_DEVICE` | `0` | default dongle (index or serial, `rtl_test -t` lists them): used directly with one dongle, preselected in the launcher with several |
 | `SDR_GAIN` | `40` | tuner gain in dB for those decoders |
 | `ADSB_SERVICE` | detected | systemd service of the ADS-B decoder (`readsb`, `dump1090-fa`…) |
 | `TAR1090_URL` | `http://localhost/tar1090` | page opened for ADS-B |
@@ -202,9 +202,10 @@ Reinstalling or updating keeps your values.
 - **Antennas**: the scripts never assume which connector an antenna is on. They only open the
   RTL-SDR, so plug the antenna that suits the band (the frequency sheet tells you which band you are
   on). A 1090 MHz antenna will hear little on 137 MHz satellites or HF, and vice versa.
-- **External or several SDR dongles**: set `SDR_DEVICE` to the dongle the text decoders should use.
-  GQRX, SDR++ and SatDump choose their device in their own settings, auto_rx in `station.cfg`,
-  readsb in its own config (`/etc/default/readsb`).
+- **External or several SDR dongles**: the radio launcher asks which dongle to use (see "Using the
+  radio apps"); `SDR_DEVICE` sets the default. Give each dongle a unique serial if two share one
+  (`rtl_eeprom -s <serial>` with only that dongle plugged in). GQRX, SDR++ and SatDump choose their
+  device in their own settings, auto_rx in `station.cfg`.
 - **No AIO v2 board**: leave `AIOV2_CTL` empty. Everything else works the same.
 - **Not a uConsole**: the i3 config rotates the display `DSI-1`: adjust `config/i3/config`. The Wi-Fi
   interface and the battery are settings (`WIFI_IFACE`, `BATTERY`), detected at install.
@@ -236,8 +237,15 @@ Reinstalling or updating keeps your values.
 
 ## Using the radio apps
 
-- **One app at a time**: the RTL-SDR dongle can only be opened by one program. The launcher stops
-  the running app (and readsb) before starting another; "Stop all" frees the dongle.
+- **One app per dongle**: a dongle can only be opened by one program. The launcher stops the running
+  apps before starting another; "Stop all" frees everything. ADS-B keeps running when the new app uses
+  another dongle.
+- **Several dongles**: ADS-B, ACARS, VDL2, APRS, 433 MHz, FT8, SSTV and fldigi ask which dongle to
+  use when more than one is plugged in (`SDR_DEVICE` is preselected). For ADS-B, the choice is written
+  to `/etc/default/readsb` (`--device <serial>`, with `sudo`). GQRX, SDR++, SatDump and auto_rx keep
+  choosing their device in their own settings. On HF, the RTL-SDR Blog V4 uses its built-in
+  upconverter (no direct sampling); its HF reception may need the RTL-SDR Blog driver instead of
+  Debian's `librtlsdr`.
 - **AIO v2 rails**: with the board, the launcher switches on the rail an app needs before starting it
   (SDR for the SDR apps, LoRa for Meshcore, GPS for GPS). It never switches a rail off: use the power
   menu for that.
