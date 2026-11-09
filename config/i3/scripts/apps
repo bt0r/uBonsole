@@ -4,7 +4,8 @@
 [ -n "$BLOCK_BUTTON" ] && setsid -f ~/.config/i3/scripts/sdr-menu >/dev/null 2>&1
 ACTIVE=""
 systemctl is-active -q "$ADSB_SERVICE" && ACTIVE="ADS-B"
-for p in gqrx:GQRX sdrpp:SDR++ satdump-ui:SatDump rtl_433:433 acarsdec:ACARS dumpvdl2:VDL2 direwolf:APRS; do
+for p in gqrx:GQRX sdrpp:SDR++ satdump-ui:SatDump rtl_433:433 acarsdec:ACARS dumpvdl2:VDL2 direwolf:APRS \
+         AIS-catcher:AIS rtl_airband:Airband welle-io:DAB+ rtl_power:Scan; do
   pgrep -x "${p%%:*}" >/dev/null && ACTIVE="${p#*:}"
 done
 pgrep -f auto_rx.py >/dev/null && ACTIVE="$L_ACTIVE_SONDES"

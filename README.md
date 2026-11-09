@@ -70,11 +70,12 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Date and time | in the region's format (`12/31/2026 11:59 PM` in the USA, `31/12/2026 23:59` in France…) | |
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
-**Radio launcher** — apps grouped by use: aircraft (ADS-B with readsb + tar1090, ACARS, VDL2),
-receivers (GQRX, SDR++), satellites & weather (SatDump, radiosondes with auto_rx), amateur radio
-(APRS with direwolf, FT8 / FT4 with WSJT-X, SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi),
-sensors & mesh (433 MHz with rtl_433, Meshcore, GPS). Only one app can use the SDR dongle, so the launcher stops the
-running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
+**Radio launcher** — apps grouped by use: aircraft & ships (ADS-B with readsb + tar1090, ACARS,
+VDL2, airband voice with RTLSDR-Airband, AIS with AIS-catcher), receivers (GQRX, SDR++, DAB+ with
+welle.io, band scanner, listen to the signal), satellites & weather (SatDump, Gpredict, radiosondes
+with auto_rx), amateur radio (APRS with direwolf, including the ISS, FT8 / FT4 with WSJT-X, JS8Call,
+SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi), sensors & mesh (433 MHz with rtl_433, Meshcore,
+GPS). Only one app can use the SDR dongle, so the launcher stops the running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
 `(not installed)`. Everything decodes locally: no internet connection is needed.
 
 **Power menu** — shows battery level, state and power draw, and toggles Wi-Fi, Bluetooth and the
@@ -134,14 +135,20 @@ Optional, per radio app. A missing app is shown as `(not installed)` in the laun
 | APRS | `direwolf` + `rtl-sdr` (`rtl_fm`) | yes |
 | 433 MHz sensors | `rtl-433` | yes |
 | ACARS / VDL2 | `acarsdec` / `dumpvdl2` (+ `libacars`), built from source | yes |
+| Airband voice | [RTLSDR-Airband](https://github.com/rtl-airband/RTLSDR-Airband) 7.0.0, built from source | yes |
+| AIS (ships) | AIS-catcher, official `.deb` from [GitHub](https://github.com/jvde-github/AIS-catcher/releases) (0.70) | yes |
+| DAB+ | `welle.io` | yes |
+| Band scanner | `rtl-sdr` (`rtl_power`) + `python3-pil` + `feh` | yes |
+| Satellite passes | `gpredict` | yes |
 | Radiosondes | radiosonde_auto_rx, built from source in `~/src` | yes |
 | ADS-B | `readsb` (or `dump1090-fa`) + `tar1090` | no, see their install scripts |
 | Meshcore | `meshcore-console` ([meshcore-uconsole](https://github.com/cwill747/meshcore-uconsole)) | no |
 | FT8 / FT4 | WSJT-X, official `.deb` from [GitHub](https://github.com/WSJTX/wsjtx/releases) (3.0.2) | yes |
 | SSTV | `qsstv` | yes |
 | Morse, RTTY, NAVTEX | `fldigi` | yes |
-| Audio modes (the three above) | `rtl-sdr` (`rtl_fm`) + `pipewire-bin` (`pw-loopback`, `pw-cat`, `pw-dump`), PipeWire audio | yes |
-| GPS | `gpsd` + `gpsd-clients` (`xgps`) | no |
+| JS8Call | `js8call` | yes |
+| Audio modes (the four above) | `rtl-sdr` (`rtl_fm`) + `pipewire-bin` (`pw-loopback`, `pw-cat`, `pw-dump`), PipeWire audio | yes |
+| GPS | `gpsd` (system setup, see "Offline use") + `gpsd-clients` (`gpspipe`) | `gpsd-clients` only |
 
 `tools/install-sdr-tools.sh` targets Debian trixie on arm64 and builds part of the tools from
 source, which takes a while on a CM4.
@@ -241,10 +248,11 @@ Reinstalling or updating keeps your values.
 - **One app per dongle**: a dongle can only be opened by one program. The launcher stops the running
   apps before starting another; "Stop all" frees everything. ADS-B keeps running when the new app uses
   another dongle.
-- **Several dongles**: ADS-B, ACARS, VDL2, APRS, 433 MHz, FT8, SSTV and fldigi ask which dongle to
-  use when more than one is plugged in (`SDR_DEVICE` is preselected). For ADS-B, the choice is written
-  to `/etc/default/readsb` (`--device <serial>`, with `sudo`). GQRX, SDR++, SatDump and auto_rx keep
-  choosing their device in their own settings. On HF, the RTL-SDR Blog V4 uses its built-in
+- **Several dongles**: ADS-B, ACARS, VDL2, airband, AIS, APRS, 433 MHz, the band scanner and the
+  audio modes ask which dongle to use when more than one is plugged in (`SDR_DEVICE` is preselected).
+  For ADS-B, the choice is written to `/etc/default/readsb` (`--device <serial>`, with `sudo`). GQRX,
+  SDR++, SatDump and auto_rx keep choosing their device in their own settings; welle.io takes the
+  first dongle. On HF, the RTL-SDR Blog V4 uses its built-in
   upconverter (no direct sampling); its HF reception may need the RTL-SDR Blog driver instead of
   Debian's `librtlsdr`.
 - **AIO v2 rails**: with the board, the launcher switches on the rail an app needs before starting it
@@ -254,19 +262,39 @@ Reinstalling or updating keeps your values.
   It keeps running until "Stop all" or until you start another SDR app. Starting the service uses
   `sudo`: without password-less sudo, a terminal opens just to ask for the password. Other menus only
   call `sudo -n` (never prompt).
-- **Text decoders** (ACARS, VDL2, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
+- **Text decoders** (ACARS, VDL2, AIS, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
   one block per decoded message. A quiet terminal means nothing was received yet: check the antenna,
   go outside, or confirm activity on the waterfall in GQRX first.
 - **Radiosondes**: auto_rx opens its web map on <http://localhost:5000>. Set your position in
   `~/src/radiosonde_auto_rx/auto_rx/station.cfg` first.
-- **APRS** is receive-only (`config/direwolf/sdr.conf` uses the placeholder call sign `N0CALL`).
-- **Audio modes** (FT8 / FT4, SSTV, fldigi): each entry asks for a frequency, then `rtl_fm`
+- **APRS** is receive-only (`config/direwolf/sdr.conf` uses the placeholder call sign `N0CALL`). It
+  listens on the region's frequency (144.390 MHz in the USA and Canada, 144.800 MHz elsewhere) or on
+  the ISS digipeater (145.825 MHz), heard when the station passes over (see Gpredict).
+- **AIS** decodes ships on 161.975 / 162.025 MHz and shows them on a map at <http://localhost:8100>.
+  It is started with `-X off`: AIS-catcher would otherwise share what it receives with aiscatcher.org.
+- **Airband voice** (RTLSDR-Airband) scans a list of AM channels and plays the active one on the
+  speakers. The first start asks for the frequencies of your local airfield (tower, approach,
+  ATIS…; 121.500 MHz is the emergency frequency) and writes `~/.config/rtl_airband.conf`; edit that
+  file to change them (the launcher only sets the dongle).
+- **DAB+** (welle.io): run a station scan from its menu on first start.
+- **Band scanner**: sweeps a band for 60 s with `rtl_power` (presets follow the region: FM, airband,
+  2 m, 70 cm, PMR446 or FRS / GMRS, ISM; or any range), prints the strongest signals and opens a
+  heatmap (frequency across, time down) saved in `~/Pictures`. Below 24 MHz it needs the RTL-SDR
+  Blog V4 (`rtl_power` has no Q-branch direct sampling).
+- **Gpredict** shows satellite passes (ISS, weather satellites…). Like SatDump, it needs a connection
+  now and then to update the orbits (Edit → Update TLE).
+- **GPS** opens a popup with the fix, satellites, position, Maidenhead locator, altitude, speed and
+  GPS time (from gpsd); open it again to refresh.
+- **Audio modes** (FT8 / FT4, JS8Call, SSTV, fldigi): each entry asks for a frequency, then `rtl_fm`
   demodulates it into a virtual audio cable "uBonsole SDR" (`scripts/sdr-audio`, PipeWire only),
-  which is the default input while the mode runs. WSJT-X, QSSTV and fldigi record from it without any
-  setting: the launcher writes their audio input before starting them, turns PSK Reporter off (nothing
-  is uploaded) and skips fldigi's first-run wizard. Switching mode or "Stop all" closes the decoder,
+  which is the default input while the mode runs. WSJT-X, JS8Call, QSSTV and fldigi record from it
+  without any setting: the launcher writes their audio input before starting them, turns PSK Reporter
+  and APRS spotting off (nothing is uploaded) and skips fldigi's first-run wizard. JS8Call asks for a
+  call sign on its first start. Switching mode or "Stop all" closes the decoder,
   removes the cable and restores your default input. "Other frequency…" takes any frequency and
   demodulation.
+- **Listen to the signal**: plays the audio mode's signal on the speakers or headphones too (select it
+  again to stop). Handy to check that something is received before blaming the decoder.
 - **HF** (below 24 MHz: FT8 on 20 / 40 m, SSTV on 14.230 MHz, NAVTEX, CW, RTTY) uses the R820T
   direct sampling mode (`rtl_fm -E direct2`). It needs a long wire antenna; 2 m and 6 m work with
   the usual antennas.
@@ -291,7 +319,8 @@ Everything decodes locally. What needs a connection now and then:
 - **SatDump** downloads satellite orbits (TLE) from CelesTrak when it starts and keeps them in
   `~/.config/satdump/satdump_tles.txt`. They stay usable for one to two weeks: start SatDump once
   with a connection (a phone hotspot is enough) before leaving.
-- **Maps** of tar1090 and auto_rx load their tiles online: offline, aircraft and balloons still show,
+- **Gpredict** updates its orbits the same way (Edit → Update TLE).
+- **Maps** of tar1090, AIS-catcher and auto_rx load their tiles online: offline, aircraft, ships and balloons still show,
   on an empty background.
 
 ## Troubleshooting
@@ -332,7 +361,8 @@ config/i3/config              i3 config
 config/i3/i3blocks.conf       status bar blocks
 config/i3/scripts/            block scripts, menus, launcher, rofi theme (common.sh: settings + helpers,
                               gamepad-buttons: SELECT button listener,
-                              sdr-audio: virtual audio cable for the audio decoders)
+                              sdr-audio: virtual audio cable for the audio decoders,
+                              band-scan: band scanner, gps-info: GPS popup)
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
 config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
 config/i3/wallpapers/         wallpaper

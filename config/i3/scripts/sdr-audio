@@ -2,12 +2,14 @@
 # Virtual audio cable between the SDR and the audio decoders (WSJT-X, QSSTV, fldigi).
 #   sdr-audio start   create "uBonsole SDR" (a sink rtl_fm plays into + a source the decoders record
 #                     from) and make it the default input, remembering the previous one
-#   sdr-audio stop    restore the previous default input and remove the cable
+#   sdr-audio stop    restore the previous default input and remove the cable (and the listening)
+#   sdr-audio listen  toggle hearing the cable on the speakers / headphones (default output)
 # PipeWire only (pw-loopback, wpctl): no extra package.
 . ~/.config/i3/scripts/common.sh
 STATE="${XDG_RUNTIME_DIR:-/tmp}/ubonsole-sdr-audio"
 SINK=ubonsole_sdr          # rtl_fm plays here (pw-cat --target)
 SOURCE=ubonsole_sdr_in     # decoders record from here
+LISTEN=ubonsole_listen     # copy of the cable to the default output
 
 node_id() {  # node_id <node.name> -> PipeWire object id
   pw-dump 2>/dev/null | python3 -c "
@@ -33,6 +35,7 @@ case $1 in
     ;;
   stop)
     prev=$(cat "$STATE.previous" 2>/dev/null)
+    pkill -f "pw-loopback .*node.name=$LISTEN"
     pkill -f "pw-loopback .*node.name=$SINK"
     if [ -n "$prev" ]; then
       id=$(node_id "$prev")
@@ -40,6 +43,15 @@ case $1 in
     fi
     rm -f "$STATE.previous"
     ;;
+  listen)
+    if pkill -f "pw-loopback .*node.name=$LISTEN"; then exit 0; fi
+    [ -n "$(node_id "$SOURCE")" ] || exit 1   # nothing to listen to
+    setsid -f pw-loopback --channels 1 -C "$SOURCE" \
+      --capture-props="node.name=$LISTEN node.description=uBonsole-listen node.dont-reconnect=true" \
+      --playback-props="node.name=$LISTEN-out node.description=uBonsole-SDR" >/dev/null 2>&1
+    ;;
+  listening)
+    pgrep -f "pw-loopback .*node.name=$LISTEN" >/dev/null ;;
   *)
-    echo "usage: sdr-audio start|stop" >&2; exit 1 ;;
+    echo "usage: sdr-audio start|stop|listen|listening" >&2; exit 1 ;;
 esac

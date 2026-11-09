@@ -126,12 +126,14 @@ assign [class="(?i)sdr\+\+|sdrpp"] $ws3
 assign [class="(?i)satdump"] $ws3
 assign [class="^sdr-term$"] $ws3
 # Audio decoders (WSJT-X windows have the class "WSJT-X")
-assign [class="(?i)^(wsjt-x|qsstv|fldigi)$"] $ws3
+assign [class="(?i)^(wsjt-x|js8call|qsstv|fldigi)$"] $ws3
 
 # ADS-B: dedicated Firefox instance (X class "tar1090") -> workspace 4. The terminal that only asks for
 # the sudo password (when needed) floats on the current workspace so it is seen.
 assign [class="^tar1090$"] $ws4
 for_window [class="^adsb-term$"] floating enable
+# Band scanner result (scripts/band-scan): floating, so the whole image shows
+for_window [class="^feh$" title="^uBonsole band scan"] floating enable
 
 assign [class="vlc"] $ws5
 assign [class="Thunar"] $ws6

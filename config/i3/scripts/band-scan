@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Band scanner: sweeps a frequency range with rtl_power, then draws the activity as an image.
+
+    band-scan <device index> <gain> <start MHz> <end MHz> <seconds>
+
+Run in a terminal by the radio launcher: it prints progress and the strongest signals, saves a
+heatmap (frequency across, time down, in the theme's accent color) to ~/Pictures and opens it.
+"""
+import csv
+import os
+import re
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+
+from PIL import Image, ImageDraw, ImageFont
+
+dev, gain, start, end, seconds = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), int(sys.argv[5])
+
+# ~800 bins across the range, at least 1 kHz each
+bin_hz = max(1000, int((end - start) * 1e6 / 800))
+out_csv = tempfile.NamedTemporaryFile(suffix=".csv", delete=False).name
+cmd = ["rtl_power", "-d", dev, "-f", "%dk:%dk:%d" % (start * 1000, end * 1000, bin_hz),
+       "-i", "2", "-e", "%ds" % seconds, "-g", gain, out_csv]
+print("%.3f - %.3f MHz, %d s, %.1f kHz bins" % (start, end, seconds, bin_hz / 1000), flush=True)
+proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+t0 = time.time()
+while proc.poll() is None:
+    done = min(seconds, int(time.time() - t0))
+    print("\r[%-30s] %3d s" % ("#" * (30 * done // seconds), done), end="", flush=True)
+    time.sleep(1)
+print()
+
+# rtl_power rows: date, time, low Hz, high Hz, step Hz, samples, dB...  (one sweep = several rows)
+sweeps = {}
+for row in csv.reader(open(out_csv)):
+    try:
+        lo, step = float(row[2]), float(row[4])
+        values = [float(v) for v in row[6:]]
+    except (ValueError, IndexError):
+        continue
+    line = sweeps.setdefault(row[0] + row[1], {})
+    for i, v in enumerate(values):
+        line[lo + i * step] = v
+os.unlink(out_csv)
+if not sweeps:
+    print("No data: is the dongle free and plugged in?")
+    sys.exit(1)
+
+freqs = sorted({f for line in sweeps.values() for f in line})
+rows = [[line.get(f) for f in freqs] for _, line in sorted(sweeps.items())]
+flat = [v for r in rows for v in r if v is not None]
+floor = statistics.median(flat)
+top = max(flat)
+
+# Strongest signals: per-bin maximum over time, then local peaks, merged within 5 bins
+maxima = [max((r[i] for r in rows if r[i] is not None), default=floor) for i in range(len(freqs))]
+peaks = []
+for i in sorted(range(len(freqs)), key=lambda i: -maxima[i]):
+    if maxima[i] - floor < 6 or len(peaks) >= 10:
+        break
+    if all(abs(i - j) > 5 for j, _ in peaks):
+        peaks.append((i, maxima[i] - floor))
+print("Noise floor %.1f dB. Strongest signals:" % floor)
+for i, above in sorted(peaks):
+    print("  %10.4f MHz  +%.1f dB" % (freqs[i] / 1e6, above))
+if not peaks:
+    print("  nothing more than 6 dB above the noise")
+
+# Colors: black -> accent -> white, the accent read from the installed rofi theme
+hex_color = "E09AB4"   # reference pink, used only when the theme cannot be read
+try:
+    m = re.search(r"accent:\s*#([0-9a-fA-F]{6})", open(os.path.expanduser("~/.config/i3/scripts/rofi-theme.rasi")).read())
+    if m:
+        hex_color = m.group(1)
+except OSError:
+    pass
+accent = tuple(int(hex_color[k:k + 2], 16) for k in (0, 2, 4))
+
+
+def color(v):
+    if v is None:
+        return (0, 0, 0)
+    x = max(0.0, min(1.0, (v - floor) / max(1.0, top - floor)))
+    if x < 0.6:
+        t = x / 0.6
+        return tuple(int(c * t) for c in accent)
+    t = (x - 0.6) / 0.4
+    return tuple(int(c + (255 - c) * t) for c in accent)
+
+
+W, ROW_H, LEFT, TOP, BOTTOM = 1000, max(4, 360 // len(rows)), 70, 40, 60
+img = Image.new("RGB", (W + LEFT + 50, TOP + ROW_H * len(rows) + BOTTOM), (0, 0, 0))
+d = ImageDraw.Draw(img)
+for y, r in enumerate(rows):
+    for x in range(W):
+        d.rectangle([LEFT + x, TOP + y * ROW_H, LEFT + x, TOP + (y + 1) * ROW_H - 1],
+                    fill=color(r[min(len(r) - 1, x * len(r) // W)]))
+try:
+    font = ImageFont.truetype("DejaVuSansMono.ttf", 14)
+except OSError:
+    font = ImageFont.load_default()
+d.text((LEFT, 10), "%.3f - %.3f MHz  ·  %d s  ·  floor %.1f dB" % (start, end, seconds, floor), fill=accent, font=font)
+y0 = TOP + ROW_H * len(rows)
+for k in range(6):
+    f = start + (end - start) * k / 5
+    x = LEFT + int(W * k / 5)
+    d.line([x, y0, x, y0 + 6], fill=accent)
+    d.text((x - 30, y0 + 10), "%.3f" % f, fill=accent, font=font)
+for i, _ in peaks:
+    x = LEFT + int(W * i / len(freqs))
+    d.text((x - 4, y0 + 30), "▲", fill=accent, font=font)
+d.text((4, TOP), "0 s", fill=accent, font=font)
+d.text((4, y0 - 18), "%d s" % seconds, fill=accent, font=font)
+
+pictures = os.path.expanduser("~/Pictures")
+os.makedirs(pictures, exist_ok=True)
+path = os.path.join(pictures, "ubonsole-scan-%s-%.0f-%.0fMHz.png" % (time.strftime("%Y%m%d-%H%M%S"), start, end))
+img.save(path)
+print("Image: %s" % path, flush=True)
+subprocess.Popen(["feh", "--scale-down", "--title", "uBonsole band scan", path], start_new_session=True,
+                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

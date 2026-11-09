@@ -1,0 +1,61 @@
+#!/bin/bash
+# GPS popup (gpsd): fix, satellites, position, Maidenhead locator, altitude, speed and GPS time.
+# Click again (or Escape) to close; open it again to refresh.
+. ~/.config/i3/scripts/common.sh
+pkill -f "rofi -e .*-name gpsinfo" && exit 0
+aio GPS on >/dev/null 2>&1
+
+if ! command -v gpspipe >/dev/null 2>&1; then
+  TEXT=$L_GPS_NODAEMON
+else
+  # Labels go through the environment so quotes in translations are safe
+  TEXT=$(timeout 6 gpspipe -w -n 15 2>/dev/null | L_GPS_NOFIX=$L_GPS_NOFIX L_GPS_NODAEMON=$L_GPS_NODAEMON \
+    L_GPS_FIX=$L_GPS_FIX L_GPS_SATS=$L_GPS_SATS L_GPS_POS=$L_GPS_POS L_GPS_LOCATOR=$L_GPS_LOCATOR \
+    L_GPS_ALT=$L_GPS_ALT L_GPS_SPEED=$L_GPS_SPEED L_GPS_TIME=$L_GPS_TIME python3 -c '
+import json, os, sys
+from html import escape
+L = os.environ.get
+tpv, sky, seen = {}, {}, False
+for line in sys.stdin:
+    try:
+        d = json.loads(line)
+    except ValueError:
+        continue
+    seen = True
+    if d.get("class") == "TPV":
+        tpv = d
+    elif d.get("class") == "SKY" and d.get("satellites") is not None:
+        sky = d
+
+def locator(lat, lon):
+    lon, lat = lon + 180, lat + 90
+    return (chr(65 + int(lon // 20)) + chr(65 + int(lat // 10)) + str(int(lon % 20 // 2)) + str(int(lat % 10))
+            + chr(97 + int(lon % 2 * 12)) + chr(97 + int(lat % 1 * 24)))
+
+if not seen:
+    print(escape(L("L_GPS_NODAEMON"))); sys.exit()
+sats = sky.get("satellites", [])
+used = sum(1 for s in sats if s.get("used"))
+mode = tpv.get("mode", 1)
+rows = [(L("L_GPS_FIX"), {1: "-", 2: "2D", 3: "3D"}.get(mode, "-")),
+        (L("L_GPS_SATS"), "%d / %d" % (used, len(sats)))]
+if mode >= 2 and "lat" in tpv:
+    lat, lon = tpv["lat"], tpv["lon"]
+    rows += [(L("L_GPS_POS"), "%.5f, %.5f" % (lat, lon)), (L("L_GPS_LOCATOR"), locator(lat, lon))]
+    if mode == 3 and "altMSL" in tpv:
+        rows.append((L("L_GPS_ALT"), "%.0f m" % tpv["altMSL"]))
+    if "speed" in tpv:
+        rows.append((L("L_GPS_SPEED"), "%.1f km/h" % (tpv["speed"] * 3.6)))
+if tpv.get("time"):
+    rows.append((L("L_GPS_TIME"), tpv["time"].replace("T", " ").split(".")[0].rstrip("Z") + " UTC"))
+width = max(len(k) for k, _ in rows)
+out = ["<b>GPS</b>", ""] + ["%s  %s" % (escape(k.ljust(width)), escape(v)) for k, v in rows]
+if mode < 2:
+    out += ["", escape(L("L_GPS_NOFIX"))]
+print("\n".join(out))
+')
+  [ -z "$TEXT" ] && TEXT=$L_GPS_NODAEMON
+fi
+setsid -f rofi -e "$TEXT" -markup -name gpsinfo -theme "$ROFI_THEME" \
+  -theme-str '* { font: "DejaVu Sans Mono 11"; } window { location: north; anchor: north; y-offset: 32px; width: 520px; padding: 10px; }' \
+  >/dev/null 2>&1

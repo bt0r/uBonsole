@@ -18,7 +18,8 @@ readsb_device() { sed -n 's/.*--device[ =]\([^ "]*\).*/\1/p' /etc/default/readsb
 free_sdr() {
   pkill -x gqrx; pkill -x sdrpp; pkill -x satdump-ui; pkill -x satdump
   pkill -x rtl_433; pkill -x rtl_fm; pkill -x acarsdec; pkill -x dumpvdl2; pkill -x direwolf
-  pkill -f auto_rx.py; pkill -f scripts/adsb
+  pkill -x AIS-catcher; pkill -x rtl_airband; pkill -x welle-io; pkill -x rtl_power
+  pkill -f auto_rx.py; pkill -f scripts/adsb; pkill -f scripts/band-scan
   close_decoders
   ~/.config/i3/scripts/sdr-audio stop
   # ADS-B keeps running when the app about to start uses another dongle
@@ -53,12 +54,14 @@ pick_sdr() {
   fi
   IFS=$'\t' read -r DEV_INDEX DEV_SERIAL DEV_NAME <<< "${sdrs[sel]}"
 }
-# Audio decoders listen to the SDR through the virtual cable: they go with it. WSJT-X is closed
-# through i3 so it saves its settings; QSSTV would ask for confirmation, so it gets SIGTERM.
+# Audio decoders listen to the SDR through the virtual cable: they go with it. WSJT-X and JS8Call
+# are closed through i3 so they save their settings; QSSTV would ask for confirmation: SIGTERM.
 close_decoders() {
-  i3-msg -q '[class="WSJT-X"] kill' >/dev/null 2>&1
+  i3-msg -q '[class="(?i)^(wsjt-x|js8call)$"] kill' >/dev/null 2>&1
   pkill -x qsstv; pkill -x fldigi
-  for _ in $(seq 25); do pgrep -x '(wsjtx|qsstv|fldigi)' >/dev/null || break; sleep 0.2; done
+  for _ in $(seq 25); do pgrep -x '(wsjtx|js8call|qsstv|fldigi)' >/dev/null || break; sleep 0.2; done
+  # Still open (a dialog was showing): SIGTERM
+  pkill -x wsjtx; pkill -x js8call
 }
 # Text-mode decoder in a terminal (workspace 3) that stays open when it exits
 term() {
@@ -150,6 +153,60 @@ with open(path, "w") as f:
     c.write(f, space_around_delimiters=False)
 QSSTV
 }
+# JS8Call: same receive-only defaults as WSJT-X (it is a fork). It asks for a callsign on first start.
+js8call_prepare() {
+  python3 - <<'JS8'
+import configparser, os
+path = os.path.expanduser("~/.config/JS8Call.ini")
+c = configparser.RawConfigParser(); c.optionxform = str
+c.read(path)
+if not c.has_section("Configuration"):
+    c.add_section("Configuration")
+for key, value in (("SoundInName", "ubonsole_sdr_in"), ("PSKReporter", "false"),
+                   ("SpotToAPRS", "false"), ("AutoreplyOnAtStartup", "false")):
+    c.set("Configuration", key, value)
+with open(path, "w") as f:
+    c.write(f, space_around_delimiters=False)
+JS8
+}
+# RTLSDR-Airband: scans the channels of ~/.config/rtl_airband.conf (asked once, editable after)
+# and plays them on the default output. Runs a copy pointed at the chosen dongle.
+airband_conf() {
+  local conf=~/.config/rtl_airband.conf f
+  if [ ! -f "$conf" ]; then
+    f=$(rofi -dmenu -p "$L_AIRBAND_PROMPT" -mesg "$L_AIRBAND_MESG" -filter "121.500" -theme "$ROFI_THEME" \
+      -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } mainbox { children: [ inputbar, message, listview ]; } listview { enabled: false; }' </dev/null | tr ',' ' ')
+    f=$(grep -oE '[0-9]+(\.[0-9]+)?' <<< "$f" | paste -sd, - | sed 's/,/, /g')
+    [ -z "$f" ] && exit 0
+    cat > "$conf" <<AIRBAND
+# RTLSDR-Airband, written by the uBonsole radio launcher. Edit freely: the launcher only replaces
+# "index" with the dongle you pick. Syntax: https://github.com/rtl-airband/RTLSDR-Airband/wiki
+devices:
+({
+  type = "rtlsdr";
+  index = 0;
+  gain = 25;
+  mode = "scan";
+  channels:
+  ({
+    freqs = ( $f );
+    modulation = "am";
+    outputs: ({ type = "pulse"; stream_name = "Airband"; });
+  });
+});
+AIRBAND
+  fi
+  sed "s/^\( *\)index *=.*;/\1index = ${DEV_INDEX:-0};/" "$conf" > "${XDG_RUNTIME_DIR:-/tmp}/rtl_airband.conf"
+}
+# Band scanner presets: band edges follow the region (ITU region 1 or 2)
+scan_bands() {
+  case $UBONSOLE_REGION in
+    us|ca) SCAN=("88 108" "118 137" "144 148" "420 450" "462.5 467.8" "902 928")
+           SCAN_N=("FM" "$L_SCAN_AIR" "2 m" "70 cm" "FRS / GMRS" "ISM 915") ;;
+    *)     SCAN=("87.5 108" "118 137" "144 146" "430 440" "446 446.2" "433.05 434.79" "863 870")
+           SCAN_N=("FM" "$L_SCAN_AIR" "2 m" "70 cm" "PMR446" "ISM 433" "ISM 868") ;;
+  esac
+}
 # Audio modes need rtl_fm and the PipeWire tools (pipewire-bin) for the virtual cable
 need_audio() {
   has rtl_fm || missing rtl_fm
@@ -166,21 +223,28 @@ ITEMS=(
   adsb "$L_APP_ADSB"
   acars "$L_APP_ACARS$(mark acarsdec)"
   vdl2 "$L_APP_VDL2$(mark dumpvdl2)"
+  airband "$L_APP_AIRBAND$(mark rtl_airband)"
+  ais "$L_APP_AIS$(mark AIS-catcher)"
   "#" "$L_GRP_RADIO"
   gqrx "GQRX$(mark gqrx)"
   sdrpp "SDR++$(mark sdrpp)"
+  dab "$L_APP_DAB$(mark welle-io)"
+  scan "$L_APP_SCAN$(mark rtl_power)"
+  listen "$L_APP_LISTEN$(~/.config/i3/scripts/sdr-audio listening && echo " · ON")"
   "#" "$L_GRP_SAT"
   satdump "$L_APP_SATDUMP$(mark satdump-ui)"
+  gpredict "$L_APP_GPREDICT$(mark gpredict)"
   sondes "$L_APP_SONDES$([ -f "$AUTORX_DIR/auto_rx.py" ] || echo "  $L_NOT_INSTALLED")"
   "#" "$L_GRP_HAM"
   aprs "$L_APP_APRS$(mark direwolf)"
   ft8 "$L_APP_FT8$(mark wsjtx)"
+  js8 "$L_APP_JS8$(mark js8call)"
   sstv "$L_APP_SSTV$(mark qsstv)"
   fldigi "$L_APP_FLDIGI$(mark fldigi)"
   "#" "$L_GRP_OTHER"
   ism "$L_APP_433$(mark rtl_433)"
   meshcore "$L_APP_MESHCORE$(mark meshcore-console)"
-  gps "$L_APP_GPS$(mark xgps)"
+  gps "$L_APP_GPS$(mark gpspipe)"
   "#" ""
   stop "$L_APP_STOP"
 )
@@ -195,9 +259,10 @@ for ((i = 0; i < ${#ITEMS[@]}; i += 2)); do
   fi
 done
 ROW=1
+# Tighter rows than the other menus so every app fits on the 720 px screen
 while :; do
   CHOICE=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p radio -i -no-custom -markup-rows -format i \
-    -selected-row "$ROW" "${THEME[@]}" -theme-str "listview { lines: ${#LABELS[@]}; }")
+    -selected-row "$ROW" "${THEME[@]}" -theme-str "listview { lines: ${#LABELS[@]}; } element { padding: 1px 6px; }")
   [ -z "$CHOICE" ] && exit 0
   [ "${IDS[$CHOICE]}" != "#" ] && break
   ROW=$((CHOICE + 1))   # a group title: back to the menu, on its first app
@@ -215,8 +280,42 @@ case ${IDS[$CHOICE]} in
      term "ACARS" "acarsdec -o 2 -r $DEV_INDEX 131.525 131.725 131.825" "131.525 / 131.725 / 131.825 MHz" ;;
   vdl2) has dumpvdl2 || missing dumpvdl2; pick_sdr; free_sdr
      term "VDL2" "dumpvdl2 --rtlsdr $DEV_INDEX --gain $SDR_GAIN 136725000 136775000 136875000 136975000" "136.725 - 136.975 MHz" ;;
-  aprs) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm; pick_sdr; free_sdr
-     term "APRS" "rtl_fm -d $DEV_INDEX -f 144.800M -s 24000 -g $SDR_GAIN - | direwolf -c ~/.config/direwolf/sdr.conf -r 24000 -D 1 -t 0 -" "144.800 MHz" ;;
+  aprs) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm
+     # Terrestrial APRS is 144.390 MHz in North America, 144.800 MHz elsewhere; the ISS digipeater
+     # is 145.825 MHz everywhere
+     case $UBONSOLE_REGION in us|ca) F=144.390 ;; *) F=144.800 ;; esac
+     k=$(pick APRS "APRS · $F MHz" "ISS · 145.825 MHz"); [ -z "$k" ] && exit 0
+     [ "$k" = 1 ] && F=145.825
+     pick_sdr; free_sdr
+     term "APRS" "rtl_fm -d $DEV_INDEX -f ${F}M -s 24000 -g $SDR_GAIN - | direwolf -c ~/.config/direwolf/sdr.conf -r 24000 -D 1 -t 0 -" "$F MHz" ;;
+  # -X off: AIS-catcher shares what it receives with aiscatcher.org unless told not to
+  ais) has AIS-catcher || missing AIS-catcher; pick_sdr; free_sdr
+     term "AIS" "AIS-catcher -d:$DEV_INDEX -gr TUNER $SDR_GAIN -N 8100 -X off" "161.975 / 162.025 MHz (http://localhost:8100)"
+     (sleep 6; firefox --new-tab http://localhost:8100 >/dev/null 2>&1) & ;;
+  airband) has rtl_airband || missing RTLSDR-Airband; pick_sdr; airband_conf; free_sdr
+     term "Airband" "rtl_airband -f -e -c '${XDG_RUNTIME_DIR:-/tmp}/rtl_airband.conf'" \
+       "$(sed -n 's/^ *freqs *= *( *\(.*[^ ]\) *);.*/\1/p' ~/.config/rtl_airband.conf | head -1) MHz" ;;
+  dab) has welle-io || missing welle.io; free_sdr; setsid -f welle-io >/dev/null 2>&1 ;;
+  gpredict) has gpredict || missing Gpredict; start_app gpredict ;;
+  listen) ~/.config/i3/scripts/sdr-audio listen || rofi -e "$L_LISTEN_NOTHING" "${THEME[@]}" ;;
+  scan) has rtl_power || missing rtl_power; scan_bands
+     L=(); for i in "${!SCAN[@]}"; do read -r a b <<< "${SCAN[i]}"; L+=("${SCAN_N[i]} · $a - $b MHz"); done
+     k=$(pick scan "${L[@]}" "$L_OTHER_RANGE"); [ -z "$k" ] && exit 0
+     if [ "$k" -lt "${#SCAN[@]}" ]; then
+       read -r a b <<< "${SCAN[k]}"
+     else
+       r=$(rofi -dmenu -p "$L_SCAN_PROMPT" -theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } mainbox { children: [ inputbar, listview ]; } listview { enabled: false; }' </dev/null | tr ',' '.')
+       [[ $r =~ ^\ *([0-9]+(\.[0-9]+)?)\ *-\ *([0-9]+(\.[0-9]+)?)\ *$ ]] || exit 0
+       a=${BASH_REMATCH[1]} b=${BASH_REMATCH[3]}
+       awk -v a="$a" -v b="$b" 'BEGIN { exit !(b > a) }' || exit 0
+     fi
+     pick_sdr
+     # rtl_power has no Q-branch direct sampling: HF only with the V4's upconverter
+     if awk -v f="$a" 'BEGIN { exit !(f < 24) }'; then
+       case $DEV_NAME in *"Blog V4"*) ;; *) rofi -e "$L_SCAN_HF" "${THEME[@]}"; exit 0 ;; esac
+     fi
+     free_sdr
+     term "Scan" "~/.config/i3/scripts/band-scan ${DEV_INDEX:-$SDR_DEVICE} $SDR_GAIN $a $b 60" "$a - $b MHz" ;;
   ft8) has wsjtx || missing WSJT-X; need_audio
      # FT8 / FT4 dial frequencies (USB), the same worldwide; below 24 MHz needs HF direct sampling
      F=(144.174 50.313 28.074 21.074 14.074 7.074 14.080 7.0475)
@@ -226,6 +325,14 @@ case ${IDS[$CHOICE]} in
      k=$(pick FT8 "${L[@]}"); [ -z "$k" ] && exit 0
      pick_sdr; free_sdr; audio_rx "${F[k]}" usb "${M[k]}"
      wsjtx_prepare "${M[k]}"; start_app wsjtx ;;
+  js8) has js8call || missing JS8Call; need_audio
+     # JS8Call dial frequencies (USB)
+     F=(144.178 50.318 28.078 14.078 10.130 7.078 3.578)
+     N=("2 m" "6 m" "10 m" "20 m" "30 m" "40 m" "80 m")
+     L=(); for i in "${!F[@]}"; do L+=("${N[i]} · ${F[i]} MHz$(awk -v f="${F[i]}" 'BEGIN { if (f < 24) print "  (HF)" }')"); done
+     k=$(pick JS8 "${L[@]}"); [ -z "$k" ] && exit 0
+     pick_sdr; free_sdr; audio_rx "${F[k]}" usb JS8
+     js8call_prepare; start_app js8call ;;
   sstv) has qsstv || missing QSSTV; need_audio
      k=$(pick SSTV "ISS · 145.800 MHz · FM" "20 m · 14.230 MHz · USB  (HF)" "$L_OTHER_FREQ"); [ -z "$k" ] && exit 0
      pick_sdr; free_sdr
@@ -239,7 +346,7 @@ case ${IDS[$CHOICE]} in
      fldigi_prepare; start_app fldigi ;;
   ism) has rtl_433 || missing rtl_433; pick_sdr; free_sdr; term "433 MHz" "rtl_433 -d $DEV_INDEX -f 433.92M" "433.92 MHz" ;;
   meshcore) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
-  gps) has xgps || missing xgps; aio GPS on >/dev/null 2>&1; setsid -f xgps >/dev/null 2>&1 ;;
+  gps) has gpspipe || missing "gpspipe (gpsd-clients)"; setsid -f ~/.config/i3/scripts/gps-info >/dev/null 2>&1 ;;
   stop) free_sdr ;;
 esac
 pkill -RTMIN+13 i3blocks
