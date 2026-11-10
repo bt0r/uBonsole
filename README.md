@@ -1,8 +1,10 @@
 # uBonsole
 
-An i3 setup for the **ClockworkPi uConsole** (CM4) built around software-defined radio: a pastel-on-black
-status bar, a one-click radio app launcher, an SDR frequency cheat sheet and a power menu for the
-HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails).
+An i3 desktop for the **ClockworkPi uConsole** (CM4) that turns it into a pocket SDR station: a
+pastel-on-black status bar, a one-click launcher for 30 radio apps (aircraft, ships, satellites,
+amateur radio digital modes, band scanner…), an SDR frequency cheat sheet and a power menu for the
+HackerGadgets **AIO v2** board (GPS, LoRa, SDR, USB rails). Everything decodes locally and works
+offline.
 
 The interface is available in **English, French, German and Spanish**, and the frequency cheat sheet
 is tailored to where you use the device: **France, United Kingdom, Germany, Spain, USA, Canada** or
