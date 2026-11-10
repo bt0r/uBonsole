@@ -3,6 +3,7 @@
 #   Debian packages: direwolf, satdump, qsstv, fldigi, js8call, welle.io, gpredict, gpsd-clients
 #   Official packages: SDR++ (nightly .deb), WSJT-X and AIS-catcher (GitHub release .deb)
 #   Built from source in ~/src: libacars, dumpvdl2, acarsdec, RTLSDR-Airband, radiosonde_auto_rx
+#   Docker image: ACARS Hub (only when Docker is installed; the radio launcher creates the container)
 # Log it with:  bash tools/install-sdr-tools.sh 2>&1 | tee ~/sdr-install.log
 set -e
 SRC=$HOME/src; mkdir -p "$SRC"
@@ -54,6 +55,14 @@ cd "$SRC"; [ -d radiosonde_auto_rx ] || git clone --depth 1 https://github.com/p
 cd radiosonde_auto_rx/auto_rx && ./build.sh
 python3 -m venv venv && venv/bin/pip install -r requirements.txt
 [ -f station.cfg ] || cp station.cfg.example station.cfg
+
+echo "=== ACARS Hub (Docker image, web view of ACARS / VDL2)"
+if command -v docker >/dev/null; then
+  { docker pull ghcr.io/sdr-enthusiasts/docker-acarshub:latest 2>/dev/null \
+    || sudo docker pull ghcr.io/sdr-enthusiasts/docker-acarshub:latest; } || echo "ACARS Hub: pull failed"
+else
+  echo "Docker not installed: skipping ACARS Hub (install Docker, then run this script again)"
+fi
 
 echo "=== Check"
 for b in direwolf satdump-ui sdrpp acarsdec dumpvdl2 wsjtx js8call qsstv fldigi welle-io gpredict AIS-catcher rtl_airband gpspipe; do printf "%-11s %s\n" "$b" "$(command -v "$b" || echo MISSING)"; done

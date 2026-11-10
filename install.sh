@@ -290,6 +290,8 @@ for c in gqrx sdrpp satdump-ui acarsdec dumpvdl2 rtl_airband AIS-catcher welle-i
 done
 systemctl cat "$ADSB_SERVICE.service" >/dev/null 2>&1 && FOUND+=("$ADSB_SERVICE (ADS-B)") || ABSENT+=("$ADSB_SERVICE (ADS-B)")
 [ -f "$AUTORX_DIR/auto_rx.py" ] && FOUND+=(auto_rx) || ABSENT+=(auto_rx)
+{ docker image inspect ghcr.io/sdr-enthusiasts/docker-acarshub:latest || sudo -n docker image inspect ghcr.io/sdr-enthusiasts/docker-acarshub:latest; } \
+  >/dev/null 2>&1 && FOUND+=("ACARS Hub") || ABSENT+=("ACARS Hub")
 say "Radio apps found: ${FOUND[*]:-none}"
 [ ${#ABSENT[@]} -gt 0 ] && echo "    Not found (shown as not installed in the menu): ${ABSENT[*]}"
 if [ -n "$AIOV2_CTL" ]; then

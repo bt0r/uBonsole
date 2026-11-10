@@ -71,7 +71,7 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 | Battery | icon follows the level, red below 15 %, warning at 10 % | power menu |
 
 **Radio launcher** — apps grouped by use: aircraft & ships (ADS-B with readsb + tar1090, ACARS,
-VDL2, airband voice with RTLSDR-Airband, AIS with AIS-catcher), receivers (GQRX, SDR++, DAB+ with
+VDL2, ACARS Hub, airband voice with RTLSDR-Airband, AIS with AIS-catcher), receivers (GQRX, SDR++, DAB+ with
 welle.io, band scanner, listen to the signal), satellites & weather (SatDump, Gpredict, radiosondes
 with auto_rx), amateur radio (APRS with direwolf, including the ISS, FT8 / FT4 with WSJT-X, JS8Call,
 SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi), sensors & mesh (433 MHz with rtl_433, Meshcore,
@@ -135,6 +135,7 @@ Optional, per radio app. A missing app is shown as `(not installed)` in the laun
 | APRS | `direwolf` + `rtl-sdr` (`rtl_fm`) | yes |
 | 433 MHz sensors | `rtl-433` | yes |
 | ACARS / VDL2 | `acarsdec` / `dumpvdl2` (+ `libacars`), built from source | yes |
+| ACARS Hub | Docker + image `ghcr.io/sdr-enthusiasts/docker-acarshub` (about 300 MB on disk) | the image, when Docker is installed |
 | Airband voice | [RTLSDR-Airband](https://github.com/rtl-airband/RTLSDR-Airband) 7.0.0, built from source | yes |
 | AIS (ships) | AIS-catcher, official `.deb` from [GitHub](https://github.com/jvde-github/AIS-catcher/releases) (0.70) | yes |
 | DAB+ | `welle.io` | yes |
@@ -248,7 +249,7 @@ Reinstalling or updating keeps your values.
 - **One app per dongle**: a dongle can only be opened by one program. The launcher stops the running
   apps before starting another; "Stop all" frees everything. ADS-B keeps running when the new app uses
   another dongle.
-- **Several dongles**: ADS-B, ACARS, VDL2, airband, AIS, APRS, 433 MHz, the band scanner and the
+- **Several dongles**: ADS-B, ACARS, VDL2, ACARS Hub, airband, AIS, APRS, 433 MHz, the band scanner and the
   audio modes ask which dongle to use when more than one is plugged in (`SDR_DEVICE` is preselected).
   For ADS-B, the choice is written to `/etc/default/readsb` (`--device <serial>`, with `sudo`). GQRX,
   SDR++, SatDump and auto_rx keep choosing their device in their own settings; welle.io takes the
@@ -270,6 +271,14 @@ Reinstalling or updating keeps your values.
 - **APRS** is receive-only (`config/direwolf/sdr.conf` uses the placeholder call sign `N0CALL`). It
   listens on the region's frequency (144.390 MHz in the USA and Canada, 144.800 MHz elsewhere) or on
   the ISS digipeater (145.825 MHz), heard when the station passes over (see Gpredict).
+- **ACARS Hub** shows the ACARS or VDL2 messages in the browser (<http://localhost:8080>): search,
+  statistics, alerts and, while ADS-B runs, a map of the aircraft that sent them. The entry asks for
+  VDL2 or ACARS, starts the decoder in its terminal and the ACARS Hub container (Docker). The container
+  is created on first use (time zone of the system, `TAR1090_URL` for the map) and keeps its database
+  in `~/.local/share/acarshub` (7 days). Its ports are published on 127.0.0.1 only and it sends nothing
+  out; "Stop all" stops it. The ACARS and VDL2 entries feed it too while it runs. Docker commands use
+  the `docker` group or password-less `sudo`. To recreate the container after changing a setting:
+  `docker rm acarshub`.
 - **AIS** decodes ships on 161.975 / 162.025 MHz and shows them on a map at <http://localhost:8100>.
   It is started with `-X off`: AIS-catcher would otherwise share what it receives with aiscatcher.org.
 - **Airband voice** (RTLSDR-Airband) scans a list of AM channels and plays the active one on the

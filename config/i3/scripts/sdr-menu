@@ -207,6 +207,34 @@ scan_bands() {
            SCAN_N=("FM" "$L_SCAN_AIR" "2 m" "70 cm" "PMR446" "ISM 433" "ISM 868") ;;
   esac
 }
+# ACARS Hub (Docker): web view of the ACARS / VDL2 messages. The decoders always send JSON to its UDP
+# ports (5550 ACARS, 5555 VDL2), which are published on 127.0.0.1 only; nothing goes to the network.
+ACARSHUB_IMAGE=ghcr.io/sdr-enthusiasts/docker-acarshub:latest
+ACARS_CMD() { echo "acarsdec -o 2 -j 127.0.0.1:5550 -r $DEV_INDEX 131.525 131.725 131.825"; }
+VDL2_CMD() {
+  echo "dumpvdl2 --output decoded:text:file:path=- --output decoded:json:udp:address=127.0.0.1,port=5555" \
+    "--rtlsdr $DEV_INDEX --gain $SDR_GAIN 136725000 136775000 136875000 136975000"
+}
+# docker without the docker group: password-less sudo
+dk() { docker "$@" 2>/dev/null || sudo -n docker "$@"; }
+has_acarshub() { has docker && dk image inspect "$ACARSHUB_IMAGE" >/dev/null 2>&1; }
+# Created on first use, from the settings: time zone of the system, tar1090 for the aircraft map
+acarshub_start() {
+  if ! dk container inspect acarshub >/dev/null 2>&1; then
+    mkdir -p ~/.local/share/acarshub
+    dk create --name acarshub --restart no \
+      -p 127.0.0.1:8080:80 -p 127.0.0.1:5550:5550/udp -p 127.0.0.1:5555:5555/udp \
+      --add-host host.docker.internal:host-gateway \
+      --tmpfs /database:exec,size=64M --tmpfs /run:exec,size=64M --tmpfs /var/log:size=64M \
+      -v "$HOME/.local/share/acarshub:/run/acars" \
+      -e TZ="$(timedatectl show -p Timezone --value 2>/dev/null || echo Etc/UTC)" \
+      -e ENABLE_ACARS=true -e ACARS_CONNECTIONS=udp -e ENABLE_VDLM=true -e VDLM_CONNECTIONS=udp \
+      -e DB_SAVEALL=true -e MIN_LOG_LEVEL=3 \
+      -e ENABLE_ADSB=true -e ADSB_URL="${TAR1090_URL/localhost/host.docker.internal}/data/aircraft.json" \
+      "$ACARSHUB_IMAGE" >/dev/null || return 1
+  fi
+  dk start acarshub >/dev/null
+}
 # Audio modes need rtl_fm and the PipeWire tools (pipewire-bin) for the virtual cable
 need_audio() {
   has rtl_fm || missing rtl_fm
@@ -223,6 +251,7 @@ ITEMS=(
   adsb "$L_APP_ADSB"
   acars "$L_APP_ACARS$(mark acarsdec)"
   vdl2 "$L_APP_VDL2$(mark dumpvdl2)"
+  acarshub "$L_APP_ACARSHUB$(has_acarshub || echo "  $L_NOT_INSTALLED")"
   airband "$L_APP_AIRBAND$(mark rtl_airband)"
   ais "$L_APP_AIS$(mark AIS-catcher)"
   "#" "$L_GRP_RADIO"
@@ -277,9 +306,17 @@ case ${IDS[$CHOICE]} in
      term "Radiosondes" "cd '$AUTORX_DIR' && ./venv/bin/python auto_rx.py" "400-406 MHz (http://localhost:5000)"
      (sleep 15; firefox --new-tab http://localhost:5000 >/dev/null 2>&1) & ;;
   acars) has acarsdec || missing acarsdec; pick_sdr; free_sdr
-     term "ACARS" "acarsdec -o 2 -r $DEV_INDEX 131.525 131.725 131.825" "131.525 / 131.725 / 131.825 MHz" ;;
+     term "ACARS" "$(ACARS_CMD)" "131.525 / 131.725 / 131.825 MHz" ;;
   vdl2) has dumpvdl2 || missing dumpvdl2; pick_sdr; free_sdr
-     term "VDL2" "dumpvdl2 --rtlsdr $DEV_INDEX --gain $SDR_GAIN 136725000 136775000 136875000 136975000" "136.725 - 136.975 MHz" ;;
+     term "VDL2" "$(VDL2_CMD)" "136.725 - 136.975 MHz" ;;
+  acarshub) has_acarshub || missing "ACARS Hub (tools/install-sdr-tools.sh)"
+     k=$(pick "ACARS Hub" "$L_APP_VDL2$(mark dumpvdl2)" "$L_APP_ACARS$(mark acarsdec)"); [ -z "$k" ] && exit 0
+     if [ "$k" = 0 ]; then has dumpvdl2 || missing dumpvdl2; else has acarsdec || missing acarsdec; fi
+     acarshub_start || { rofi -e "$L_ACARSHUB_FAILED" "${THEME[@]}"; exit 0; }
+     pick_sdr; free_sdr
+     if [ "$k" = 0 ]; then term "VDL2" "$(VDL2_CMD)" "136.725 - 136.975 MHz (http://localhost:8080)"
+     else term "ACARS" "$(ACARS_CMD)" "131.525 / 131.725 / 131.825 MHz (http://localhost:8080)"; fi
+     (sleep 15; firefox --new-tab http://localhost:8080 >/dev/null 2>&1) & ;;
   aprs) has direwolf || missing direwolf; has rtl_fm || missing rtl_fm
      # Terrestrial APRS is 144.390 MHz in North America, 144.800 MHz elsewhere; the ISS digipeater
      # is 145.825 MHz everywhere
@@ -347,6 +384,6 @@ case ${IDS[$CHOICE]} in
   ism) has rtl_433 || missing rtl_433; pick_sdr; free_sdr; term "433 MHz" "rtl_433 -d $DEV_INDEX -f 433.92M" "433.92 MHz" ;;
   meshcore) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
   gps) has gpspipe || missing "gpspipe (gpsd-clients)"; setsid -f ~/.config/i3/scripts/gps-info >/dev/null 2>&1 ;;
-  stop) free_sdr ;;
+  stop) free_sdr; has docker && dk stop acarshub >/dev/null 2>&1 ;;
 esac
 pkill -RTMIN+13 i3blocks
