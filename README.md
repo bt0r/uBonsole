@@ -76,7 +76,7 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 VDL2, ACARS Hub, airband voice with RTLSDR-Airband, AIS with AIS-catcher), receivers (GQRX, SDR++, DAB+ with
 welle.io, band scanner, listen to the signal), satellites & weather (SatDump, Gpredict, radiosondes
 with auto_rx), amateur radio (APRS with direwolf, including the ISS, FT8 / FT4 with WSJT-X, JS8Call,
-SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi), sensors & mesh (433 MHz with rtl_433, Meshcore,
+SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi), sensors & mesh (RTL 433: weather sensors, remotes, tyre sensors, utility meters; Meshcore,
 GPS). Only one app can use the SDR dongle, so the launcher stops the running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
 `(not installed)`. Everything decodes locally: no internet connection is needed.
 
@@ -135,7 +135,7 @@ Optional, per radio app. A missing app is shown as `(not installed)` in the laun
 | SDR++ | official `.deb` (SDRPlusPlus nightly) | yes |
 | SatDump | `satdump` | yes |
 | APRS | `direwolf` + `rtl-sdr` (`rtl_fm`) | yes |
-| 433 MHz sensors | `rtl-433` | yes |
+| RTL 433 (ISM sensors, meters) | `rtl-433` | yes |
 | ACARS / VDL2 | `acarsdec` / `dumpvdl2` (+ `libacars`), built from source | yes |
 | ACARS Hub | Docker + image `ghcr.io/sdr-enthusiasts/docker-acarshub` (about 300 MB on disk) | the image, when Docker is installed |
 | Airband voice | [RTLSDR-Airband](https://github.com/rtl-airband/RTLSDR-Airband) 7.0.0, built from source | yes |
@@ -251,7 +251,7 @@ Reinstalling or updating keeps your values.
 - **One app per dongle**: a dongle can only be opened by one program. The launcher stops the running
   apps before starting another; "Stop all" frees everything. ADS-B keeps running when the new app uses
   another dongle.
-- **Several dongles**: ADS-B, ACARS, VDL2, ACARS Hub, airband, AIS, APRS, 433 MHz, the band scanner and the
+- **Several dongles**: ADS-B, ACARS, VDL2, ACARS Hub, airband, AIS, APRS, RTL 433, the band scanner and the
   audio modes ask which dongle to use when more than one is plugged in (`SDR_DEVICE` is preselected).
   For ADS-B, the choice is written to `/etc/default/readsb` (`--device <serial>`, with `sudo`). GQRX,
   SDR++, SatDump and auto_rx keep choosing their device in their own settings; welle.io takes the
@@ -265,7 +265,7 @@ Reinstalling or updating keeps your values.
   It keeps running until "Stop all" or until you start another SDR app. Starting the service uses
   `sudo`: without password-less sudo, a terminal opens just to ask for the password. Other menus only
   call `sudo -n` (never prompt).
-- **Text decoders** (ACARS, VDL2, AIS, APRS, 433 MHz, radiosondes) print a "listening on …" line, then
+- **Text decoders** (ACARS, VDL2, AIS, APRS, RTL 433, radiosondes) print a "listening on …" line, then
   one block per decoded message. A quiet terminal means nothing was received yet: check the antenna,
   go outside, or confirm activity on the waterfall in GQRX first.
 - **Radiosondes**: auto_rx opens its web map on <http://localhost:5000>. Set your position in
@@ -288,6 +288,13 @@ Reinstalling or updating keeps your values.
   ATIS…; 121.500 MHz is the emergency frequency) and writes `~/.config/rtl_airband.conf`; edit that
   file to change them (the launcher only sets the dongle).
 - **DAB+** (welle.io): run a station scan from its menu on first start.
+- **RTL 433** asks for a preset, following the region. Europe and the UK: all decoders on 433.92 MHz
+  (weather, home automation, remotes, tyres), tyre sensors only (TPMS), 868.3 MHz sensors (LaCrosse
+  IT+, TFA, Bresser, ELV, Wireless M-Bus S/T), water and heat meters on 868.95 MHz (Wireless M-Bus
+  C/T). USA and Canada: all decoders on 433.92 or 315 MHz, TPMS on 315 MHz, 915 MHz weather
+  stations, Badger ORION water meters on 916.45 MHz. Also: both bands in turn (30 s each), the pulse
+  analyzer (`rtl_433 -A`) for an unknown signal, or any frequency. Meter readings are often
+  encrypted: rtl_433 shows the maker and ID, the values may be meaningless without the key.
 - **Band scanner**: sweeps a band for 60 s with `rtl_power` (presets follow the region: FM, airband,
   2 m, 70 cm, PMR446 or FRS / GMRS, ISM; or any range), prints the strongest signals and opens a
   heatmap (frequency across, time down) saved in `~/Pictures`. Below 24 MHz it needs the RTL-SDR

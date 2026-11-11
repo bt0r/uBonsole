@@ -29,7 +29,8 @@
 26.965 – 27.405 MHz     CB, CEPT 40 ch.                 FM / AM
 137.1 / 137.9 MHz       Meteor-M weather satellites     → SatDump
 400 – 406 MHz           Weather radiosondes             → auto_rx
-433.92 MHz              ISM sensors (weather, remotes)  → rtl_433
+433.92 / 868.3 MHz      ISM sensors (weather, remotes)  → rtl_433
 446.0 – 446.2 MHz       PMR446 (walkie-talkies, 16 ch.) NFM
 868 / 869.525 MHz       LoRa / Meshtastic               digital
+868.95 MHz              Water / heat meters (M-Bus)     → rtl_433
 1090 MHz                ADS-B (aircraft)                → tar1090

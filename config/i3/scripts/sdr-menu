@@ -207,6 +207,23 @@ scan_bands() {
            SCAN_N=("FM" "$L_SCAN_AIR" "2 m" "70 cm" "PMR446" "ISM 433" "ISM 868") ;;
   esac
 }
+# rtl_433 presets: ISM bands follow the region (433.92 / 868 MHz in ITU region 1, 315 / 433.92 / 915 in
+# region 2). Fast FSK (868, 915) needs a wider sample rate, Wireless M-Bus C/T and Badger ORION 1.2 MHz
+# (rtl_433 -R help). The TPMS decoders are read from rtl_433 itself, so new ones are picked up.
+ism_presets() {
+  local tpms
+  tpms=$(rtl_433 -R help 2>&1 | sed -nE 's/^ +\[0*([0-9]+)\]\*? .*TPMS.*/-R \1/p' | paste -sd' ')
+  case $UBONSOLE_REGION in
+    us|ca) ISM_N=("$L_ISM_ALL" "$L_ISM_ALL" "$L_ISM_TPMS" "$L_ISM_915" "$L_ISM_ORION" "$L_ISM_HOP" "$L_ISM_PULSE")
+           ISM_F=("433.92 MHz" "315 MHz" "315 MHz" "915 MHz" "916.45 MHz" "315 / 433.92 MHz" "433.92 MHz")
+           ISM_A=("-f 433.92M" "-f 315M" "-f 315M -s 1000k $tpms" "-f 915M -s 1000k" "-f 916.45M -s 1200k -R 223"
+                  "-f 315M -f 433.92M -s 1000k -H 30" "-f 433.92M -A") ;;
+    *)     ISM_N=("$L_ISM_ALL" "$L_ISM_TPMS" "$L_ISM_868" "$L_ISM_METERS" "$L_ISM_HOP" "$L_ISM_PULSE")
+           ISM_F=("433.92 MHz" "433.92 MHz" "868.3 MHz" "868.95 MHz" "433.92 / 868.3 MHz" "433.92 MHz")
+           ISM_A=("-f 433.92M" "-f 433.92M -s 1000k $tpms" "-f 868.3M -s 1000k" "-f 868.95M -s 1200k -R 104"
+                  "-f 433.92M -f 868.3M -s 1000k -H 30" "-f 433.92M -A") ;;
+  esac
+}
 # ACARS Hub (Docker): web view of the ACARS / VDL2 messages. The decoders always send JSON to its UDP
 # ports (5550 ACARS, 5555 VDL2), which are published on 127.0.0.1 only; nothing goes to the network.
 ACARSHUB_IMAGE=ghcr.io/sdr-enthusiasts/docker-acarshub:latest
@@ -381,7 +398,16 @@ case ${IDS[$CHOICE]} in
      pick_sdr; free_sdr
      case $k in 0) audio_rx 0.517 usb NAVTEX ;; 1) audio_rx 14.0244 usb CW ;; 2) audio_rx 14.082 usb RTTY ;; *) custom_rx fldigi ;; esac
      fldigi_prepare; start_app fldigi ;;
-  ism) has rtl_433 || missing rtl_433; pick_sdr; free_sdr; term "433 MHz" "rtl_433 -d $DEV_INDEX -f 433.92M" "433.92 MHz" ;;
+  ism) has rtl_433 || missing rtl_433; ism_presets
+     L=(); for i in "${!ISM_N[@]}"; do L+=("${ISM_N[i]} · ${ISM_F[i]}"); done
+     k=$(pick "RTL 433" "${L[@]}" "$L_OTHER_FREQ"); [ -z "$k" ] && exit 0
+     if [ "$k" -lt "${#ISM_N[@]}" ]; then F=${ISM_F[k]} A=${ISM_A[k]}
+     else
+       f=$(rofi -dmenu -p "$L_FREQ_PROMPT" -theme "$ROFI_THEME" -theme-str 'window { location: north; anchor: north; y-offset: 32px; width: 560px; } mainbox { children: [ inputbar, listview ]; } listview { enabled: false; }' </dev/null | tr ',' '.')
+       [[ $f =~ ^[0-9]+(\.[0-9]+)?$ ]] || exit 0
+       F="$f MHz" A="-f ${f}M -s 1000k"
+     fi
+     pick_sdr; free_sdr; term "RTL 433" "rtl_433 -d $DEV_INDEX $A" "$F" ;;
   meshcore) has meshcore-console || missing Meshcore; aio LORA on >/dev/null 2>&1; setsid -f meshcore-console >/dev/null 2>&1 ;;
   gps) has gpspipe || missing "gpspipe (gpsd-clients)"; setsid -f ~/.config/i3/scripts/gps-info >/dev/null 2>&1 ;;
   stop) free_sdr; has docker && dk stop acarshub >/dev/null 2>&1 ;;

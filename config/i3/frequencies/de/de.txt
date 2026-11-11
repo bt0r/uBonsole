@@ -27,7 +27,8 @@
 26,565 – 27,405 MHz     CB, 80 Kanäle (19: 27,185)      FM / AM
 137,1 / 137,9 MHz       Meteor-M Wettersatelliten       → SatDump          Jede private oder verschlüsselte Kommunikation
 400 – 406 MHz           Wetter-Radiosonden              → auto_rx          <i>Abhören fremder Nachrichten verboten (§ 5 TDDDG)</i>
-433,92 MHz              ISM-Sensoren (Wetter, Fernbed.) → rtl_433
+433,92 / 868,3 MHz      ISM-Sensoren (Wetter, Fernbed.) → rtl_433
 446,0 – 446,2 MHz       PMR446 (Funkgeräte, 16 Kanäle)  NFM
 868 / 869,525 MHz       LoRa / Meshtastic               digital
+868,95 MHz              Wasser-/Wärmezähler (M-Bus)     → rtl_433
 1090 MHz                ADS-B (Flugzeuge)               → tar1090

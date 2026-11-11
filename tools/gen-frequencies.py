@@ -101,9 +101,12 @@ METEOR = ("137,1 / 137,9 MHz", tr("Meteor-M weather satellites", "Satellites mé
                                 "Meteor-M Wettersatelliten", "Satélites meteo Meteor-M"), "→ SatDump")
 SONDES = ("400 – 406 MHz", tr("Weather radiosondes", "Radiosondes météo", "Wetter-Radiosonden",
                               "Radiosondas meteorológicas"), "→ auto_rx")
-ISM_R1 = ("433,92 MHz", tr("ISM sensors (weather, remotes)", "Capteurs ISM (météo, télécom.)",
+ISM_R1 = ("433,92 / 868,3 MHz", tr("ISM sensors (weather, remotes)", "Capteurs ISM (météo, télécom.)",
                           "ISM-Sensoren (Wetter, Fernbed.)", "Sensores ISM (meteo, mandos)"), "→ rtl_433")
 ISM_R2 = ("315 / 433,92 MHz", ISM_R1[1], "→ rtl_433")
+# Wireless M-Bus modes C and T (EN 13757-4): water, heat and heat-cost meters
+METERS_R1 = ("868,95 MHz", tr("Water / heat meters (M-Bus)", "Compteurs eau / chaleur (M-Bus)",
+                             "Wasser-/Wärmezähler (M-Bus)", "Contadores agua / calor (M-Bus)"), "→ rtl_433")
 PMR446 = ("446,0 – 446,2 MHz", tr("PMR446 (walkie-talkies, 16 ch.)", "PMR446 (talkies, 16 canaux)",
                                 "PMR446 (Funkgeräte, 16 Kanäle)", "PMR446 (walkies, 16 canales)"), "NFM")
 LORA_R1 = ("868 / 869,525 MHz", tr("LoRa / Meshtastic", "LoRa / Meshtastic", "LoRa / Meshtastic", "LoRa / Meshtastic"), DIGITAL)
@@ -164,7 +167,7 @@ def r1_ham(top=band("1,81 – 2,0 MHz", "160 m", "LSB / CW"), six="50 – 52 MHz
 
 
 R1_BROADCAST = [(H, "broadcast"), LW, MW_R1, SW_R1, FM_R1, DAB]
-R1_MISC = [(H, "misc"), CB_CEPT, METEOR, SONDES, ISM_R1, PMR446, LORA_R1, ADSB]
+R1_MISC = [(H, "misc"), CB_CEPT, METEOR, SONDES, ISM_R1, PMR446, LORA_R1, METERS_R1, ADSB]
 R1_MONITOR = [VOR, AIR, ACARS_R1, VDL2_R1, MARINE, AIS]
 
 
@@ -199,7 +202,7 @@ REGIONS["uk"] = dict(
        ("27,60125 – 27,99125 MHz", tr("UK CB, 40 ch. (19: 27.78125)", "CB UK, 40 can. (19 : 27,78125)",
                                       "UK-CB, 40 Kan. (19: 27,78125)", "CB UK, 40 can. (19: 27,78125)"), "FM"),
        ("26,965 – 27,405 MHz", tr("CB, CEPT 40 ch.", "CB, CEPT 40 canaux", "CB, CEPT 40 Kanäle", "CB, CEPT 40 canales"), "FM / AM"),
-       METEOR, SONDES, ISM_R1, PMR446, LORA_R1, ADSB],
+       METEOR, SONDES, ISM_R1, PMR446, LORA_R1, METERS_R1, ADSB],
     right=[(H, "grey"), *R1_MONITOR, None, (H, "forbidden"),
            BABY, PRO_LOW, PRO_VHF1,
            PRO_VHF2, MIL,
@@ -217,7 +220,7 @@ REGIONS["de"] = dict(
     left=R1_BROADCAST + [None] + r1_ham() + [None, (H, "misc"),
         ("26,565 – 27,405 MHz", tr("CB, 80 ch. (ch. 19: 27.185)", "CB, 80 canaux (19 : 27,185)",
                                    "CB, 80 Kanäle (19: 27,185)", "CB, 80 canales (19: 27,185)"), "FM / AM"),
-        METEOR, SONDES, ISM_R1, PMR446, LORA_R1, ADSB],
+        METEOR, SONDES, ISM_R1, PMR446, LORA_R1, METERS_R1, ADSB],
     right=[(H, "grey"), *R1_MONITOR, None, (H, "forbidden"),
            BABY,
            ("74,215 – 77,475 MHz", tr("BOS analogue 4 m, lower (emergency)", "BOS analogique 4 m bas (secours)",
