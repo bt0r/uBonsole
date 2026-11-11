@@ -74,7 +74,7 @@ takes any custom `#RRGGBB` (`--color '#A0C4FF'`): it warns when a color is too d
 
 **Radio launcher** — apps grouped by use: aircraft & ships (ADS-B with readsb + tar1090, ACARS,
 VDL2, ACARS Hub, airband voice with RTLSDR-Airband, AIS with AIS-catcher), receivers (GQRX, SDR++, DAB+ with
-welle.io, band scanner, listen to the signal), satellites & weather (SatDump, Gpredict, radiosondes
+welle.io, band scanner, conversation scanner, listen to the signal), satellites & weather (SatDump, Gpredict, radiosondes
 with auto_rx), amateur radio (APRS with direwolf, including the ISS, FT8 / FT4 with WSJT-X, JS8Call,
 SSTV with QSSTV, Morse / RTTY / NAVTEX with fldigi), sensors & mesh (RTL 433: weather sensors, remotes, tyre sensors, utility meters; Meshcore,
 GPS). Only one app can use the SDR dongle, so the launcher stops the running one first. Text-mode decoders open in a terminal on workspace 3. Missing apps are flagged
@@ -107,7 +107,8 @@ The installer asks for the language, the region, the accent color and whether th
 use the same theme (off by default, as it overrides the colors of `~/.Xresources`), offers to install missing packages, backs up
 your current `~/.config/i3` to `~/.config/i3.backup-<date>`, copies the config, writes
 `~/.config/i3/ubonsole.conf` and restarts i3. It detects the AIO v2 tool, the ADS-B service and
-auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme and install the SDR tools.
+auto_rx, then lists which radio apps it found. It can also apply the Qt6 theme, install the SDR tools
+and install [ArchangeSDR](https://github.com/bt0r/ArchangeSDR), the conversation scanner (yes by default).
 
 Non-interactive: `./install.sh --lang en --region us --color blue --terminal-colors --qt-theme --yes`
 
@@ -125,6 +126,7 @@ Required (the installer offers to install the missing ones with apt):
 | Screenshots | `maim` `xdotool` `xclip` |
 | ADS-B map, auto_rx page | `firefox-esr` |
 | Scripts | `python3` |
+| Conversation scanner ([ArchangeSDR](https://github.com/bt0r/ArchangeSDR)) | `git` (to fetch it), `python3-numpy` `python3-gi` `gir1.2-gtk-4.0` `librtlsdr0`; `libnotify-bin` + `dunst` for desktop notifications |
 | Terminal | `st` (not in Debian under that name: the uConsole images ship it in `/usr/local/bin`; `stterm` + a symlink also works) |
 
 Optional, per radio app. A missing app is shown as `(not installed)` in the launcher:
@@ -299,6 +301,16 @@ Reinstalling or updating keeps your values.
   2 m, 70 cm, PMR446 or FRS / GMRS, ISM; or any range), prints the strongest signals and opens a
   heatmap (frequency across, time down) saved in `~/Pictures`. Below 24 MHz it needs the RTL-SDR
   Blog V4 (`rtl_power` has no Q-branch direct sampling).
+- **Conversation scanner**: [ArchangeSDR](https://github.com/bt0r/ArchangeSDR), a separate repository.
+  `install.sh` installs it from `../ArchangeSDR` (or `ARCHANGESDR_DIR`) when you have a checkout next
+  to uBonsole, else offers to clone it into `~/.local/src/ArchangeSDR` (a reinstall updates that
+  clone); the command is `~/.local/bin/archangesdr`. Launcher entry, or right click on the radio icon;
+  its window goes to workspace 3. It sweeps the ranges, keeps only what sounds like speech and records
+  whole conversations, with "Join" to open one in GQRX or SDR++, and optional transcription and
+  notifications (see its README). Under uBonsole it uses the `ubonsole` profile:
+  language and region from `ubonsole.conf`, default ranges from `frequencies/<region>/<lang>.json`
+  (generated with the frequency sheets), ranges `~/.config/i3/scanner-ranges.json`, history
+  `~/.local/share/ubonsole/`. The launcher pauses its scan when another app needs the dongle.
 - **Gpredict** shows satellite passes (ISS, weather satellites…). Like SatDump, it needs a connection
   now and then to update the orbits (Edit → Update TLE).
 - **GPS** opens a popup with the fix, satellites, position, Maidenhead locator, altitude, speed and
@@ -382,12 +394,13 @@ config/i3/scripts/            block scripts, menus, launcher, rofi theme (common
                               sdr-audio: virtual audio cable for the audio decoders,
                               band-scan: band scanner, gps-info: GPS popup)
 config/i3/lang/<lang>.sh      UI strings (en is the fallback)
-config/i3/frequencies/        frequency cheat sheets, <region>/<lang>.txt, generated
+config/i3/frequencies/        frequency cheat sheets <region>/<lang>.txt and the default ranges of the
+                              conversation scanner (ArchangeSDR) <region>/<lang>.json, generated
 config/i3/wallpapers/         wallpaper
 config/qt6ct/colors/          Qt6 palette
 config/xresources/            terminal colors (X resources), installed as ~/.config/i3/Xresources
 config/direwolf/sdr.conf      direwolf receive-only config for APRS
-tools/gen-frequencies.py      edit the frequency tables here, then run it
+tools/gen-frequencies.py      edit the frequency tables here, then run it (sheets + scanner ranges)
 tools/install-sdr-tools.sh    SDR tools installer
 tools/recolor.py              accent colors: swaps the reference pink in the installed files, checks contrast
 ```

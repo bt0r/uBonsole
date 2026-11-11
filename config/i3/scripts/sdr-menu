@@ -20,6 +20,7 @@ free_sdr() {
   pkill -x rtl_433; pkill -x rtl_fm; pkill -x acarsdec; pkill -x dumpvdl2; pkill -x direwolf
   pkill -x AIS-catcher; pkill -x rtl_airband; pkill -x welle-io; pkill -x rtl_power
   pkill -f auto_rx.py; pkill -f scripts/adsb; pkill -f scripts/band-scan
+  pkill -USR1 -f "$ARCHANGESDR_PROC"   # the conversation scanner (ArchangeSDR) pauses: frees the dongle, stays open
   close_decoders
   ~/.config/i3/scripts/sdr-audio stop
   # ADS-B keeps running when the app about to start uses another dongle
@@ -276,6 +277,7 @@ ITEMS=(
   sdrpp "SDR++$(mark sdrpp)"
   dab "$L_APP_DAB$(mark welle-io)"
   scan "$L_APP_SCAN$(mark rtl_power)"
+  convscan "$L_APP_CONVSCAN$([ -x "$ARCHANGESDR" ] || echo "  $L_NOT_INSTALLED")"
   listen "$L_APP_LISTEN$(~/.config/i3/scripts/sdr-audio listening && echo " · ON")"
   "#" "$L_GRP_SAT"
   satdump "$L_APP_SATDUMP$(mark satdump-ui)"
@@ -351,6 +353,9 @@ case ${IDS[$CHOICE]} in
        "$(sed -n 's/^ *freqs *= *( *\(.*[^ ]\) *);.*/\1/p' ~/.config/rtl_airband.conf | head -1) MHz" ;;
   dab) has welle-io || missing welle.io; free_sdr; setsid -f welle-io >/dev/null 2>&1 ;;
   gpredict) has gpredict || missing Gpredict; start_app gpredict ;;
+  convscan) [ -x "$ARCHANGESDR" ] || missing ArchangeSDR
+     # Already open: only bring its window back (pausing it first would stop the scan)
+     pgrep -f "$ARCHANGESDR_PROC" >/dev/null || free_sdr; setsid -f "$ARCHANGESDR" >/dev/null 2>&1 ;;
   listen) ~/.config/i3/scripts/sdr-audio listen || rofi -e "$L_LISTEN_NOTHING" "${THEME[@]}" ;;
   scan) has rtl_power || missing rtl_power; scan_bands
      L=(); for i in "${!SCAN[@]}"; do read -r a b <<< "${SCAN[i]}"; L+=("${SCAN_N[i]} · $a - $b MHz"); done

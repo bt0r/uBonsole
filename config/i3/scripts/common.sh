@@ -31,6 +31,10 @@ if [ "$UBONSOLE_LANG" != en ] && [ -f "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh" ]; 
   . "$UBONSOLE_DIR/lang/$UBONSOLE_LANG.sh"
 fi
 ROFI_THEME="$UBONSOLE_DIR/scripts/rofi-theme.rasi"
+# ArchangeSDR, the conversation scanner (separate repository, installed by install.sh), and the pkill /
+# pgrep pattern of its process ("sdrscanner" is its former name, still installed as a second command)
+ARCHANGESDR="$HOME/.local/bin/archangesdr"
+ARCHANGESDR_PROC='/(archangesdr|sdrscanner)( |$)'
 
 # RTL-SDR dongles, one per line: "index<TAB>serial<TAB>name", in librtlsdr order (as rtl_test lists
 # them, which is also the index the decoders use). Listing does not need the dongles to be free.

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Generates the SDR frequency cheat sheets: config/i3/frequencies/<region>/<lang>.txt
+and the conversation scanner's default ranges: config/i3/frequencies/<region>/<lang>.json
 
-Each file is Pango markup shown by the radio block (rofi -e -markup) in two columns.
+Each .txt file is Pango markup shown by the radio block (rofi -e -markup) in two columns.
+Each .json file lists the sheet's voice ranges (AM, NFM, FM, USB, LSB) and FM broadcast, never the
+"do not listen" sections nor ranges that belong to a decoder (ArchangeSDR, ubonsole profile).
 Regions differ in band plans (ITU Region 1 vs Region 2), licence-free radio, ACARS/APRS
 frequencies and in what the law lets you listen to. Edit the tables below, then run:
 
@@ -9,6 +12,8 @@ frequencies and in what the law lets you listen to. Edit the tables below, then 
 
 "Do not listen" ranges are indicative blocks, not an official channel list.
 """
+import json
+import re
 from html import escape
 from pathlib import Path
 
@@ -362,6 +367,71 @@ REGIONS["ca"] = dict(
 )
 
 
+# ----------------------------------------------------------------- scanner ranges
+NO_SCAN = ("forbidden", "protected")        # sections the scanner never gets
+FM_SCAN = (88e6, 102e6)                      # part of the FM broadcast band scanned for stations
+FM_STATIONS = tr("FM radio (stations)", "Radio FM (stations)", "UKW-Radio (Sender)", "Radio FM (emisoras)")
+SCAN_MODES = ("NFM", "AM", "FM", "USB", "LSB")
+
+
+def scan_freqs(value):
+    """'144,05 – 144,4 MHz' -> [(lo, hi)]; '145,800 MHz' -> a 25 kHz channel; 'a / b MHz' -> two channels."""
+    m = re.match(r"\s*([\d,]+)\s*(?:([–/-])\s*([\d,]+))?\s*(kHz|MHz)", value)
+    if not m:
+        return []
+    unit = 1e3 if m.group(4) == "kHz" else 1e6
+    a = float(m.group(1).replace(",", ".")) * unit
+    if m.group(2) in ("–", "-"):
+        return [(a, float(m.group(3).replace(",", ".")) * unit)]
+    singles = [a] + ([float(m.group(3).replace(",", ".")) * unit] if m.group(3) else [])
+    return [(f - 12_500, f + 12_500) for f in singles]
+
+
+def scan_ranges(region, lang):
+    """The scanner's default ranges for one sheet, in the scanner-ranges.json format."""
+    out = []
+    for column in ("left", "right"):
+        section = None
+        for item in REGIONS[region][column]:
+            if item is None or item[0] in (NOTE, ""):
+                continue
+            if item[0] == H:
+                section = item[1]
+                continue
+            if section in NO_SCAN:
+                continue
+            name = text(item[1], lang)
+            mode = text(item[2], lang) if len(item) > 2 else ""
+            rest = "%s %s" % (name, mode)
+            if "→" in rest or mode == text(DIGITAL, lang):
+                continue   # a decoder's range, or a digital mode: no conversation to find
+            head = HEAD[section][lang] if section else ""
+            if "WFM" in mode:
+                for lo, hi in scan_freqs(item[0]):
+                    lo, hi = max(lo, FM_SCAN[0]), min(hi, FM_SCAN[1])
+                    if lo < hi:
+                        out.append(scan_range(lo, hi, FM_STATIONS[lang], "WFM", head, True))
+                continue
+            modes = re.findall(r"\b(NFM|AM|FM|USB|LSB)\b", rest)
+            if not modes:
+                continue
+            label = re.sub(r"\s*\b(AM|NFM|FM|USB|LSB|CW)\b\s*(/\s*)?", " ", name)
+            label = re.sub(r"\s+([,)])", r"\1", re.sub(r",\s*\(", " (", label))
+            label = re.sub(r"[\s,]+$", "", re.sub(r"\s{2,}", " ", label)).strip()
+            if re.match(r"(AM|NFM|FM|USB|LSB)\b", name):
+                label = name   # "AM radio": the mode is part of the name
+            for lo, hi in scan_freqs(item[0]):
+                # Broadcast (continuous carriers), HF and very wide ranges start unticked
+                enabled = section != "broadcast" and lo >= 24e6 and hi - lo <= 20e6
+                out.append(scan_range(lo, hi, label, modes[0], head, enabled))
+    return out
+
+
+def scan_range(lo, hi, label, mode, section, enabled):
+    return {"label": label, "lo_mhz": round(lo / 1e6, 6), "hi_mhz": round(hi / 1e6, 6), "mode": mode,
+            "section": section, "enabled": enabled}
+
+
 # ----------------------------------------------------------------- rendering
 def text(value, lang):
     return value[lang] if isinstance(value, dict) else value
@@ -422,4 +492,7 @@ if __name__ == "__main__":
         d.mkdir(parents=True, exist_ok=True)
         for lang in LANGS:
             (d / ("%s.txt" % lang)).write_text(sheets[region, lang])
-    print("wrote %d regions x %d languages to %s" % (len(REGIONS), len(LANGS), OUT))
+            (d / ("%s.json" % lang)).write_text(json.dumps(scan_ranges(region, lang), ensure_ascii=False,
+                                                           indent=1) + "\n")
+    print("wrote %d regions x %d languages (.txt sheets, .json scanner ranges) to %s"
+          % (len(REGIONS), len(LANGS), OUT))

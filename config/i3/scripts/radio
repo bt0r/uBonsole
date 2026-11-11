@@ -1,12 +1,15 @@
 #!/bin/bash
-# i3blocks: radio icon. Click = frequency cheat sheet for the configured region and language (click again = close)
+# i3blocks: radio icon. Click = frequency cheat sheet for the configured region and language (click again = close),
+# right click = conversation scanner (ArchangeSDR)
 . ~/.config/i3/scripts/common.sh
 # frequencies/<region>/<lang>.txt, falling back to English, then to the generic Europe sheet
 FREQ=""
 for f in "$UBONSOLE_REGION/$UBONSOLE_LANG" "$UBONSOLE_REGION/en" "eu/$UBONSOLE_LANG" "eu/en"; do
   [ -f "$UBONSOLE_DIR/frequencies/$f.txt" ] && { FREQ="$UBONSOLE_DIR/frequencies/$f.txt"; break; }
 done
-if [ -n "$BLOCK_BUTTON" ]; then
+if [ "$BLOCK_BUTTON" = 3 ]; then
+  [ -x "$ARCHANGESDR" ] && setsid -f "$ARCHANGESDR" >/dev/null 2>&1
+elif [ -n "$BLOCK_BUTTON" ]; then
   if ! pkill -f "rofi -e.*-name frequencies"; then
     setsid -f rofi -e "$(cat "$FREQ")" -markup -name frequencies -theme "$ROFI_THEME" \
       -theme-str '* { font: "DejaVu Sans Mono 10"; } window { location: north; anchor: north; y-offset: 32px; width: 1240px; padding: 8px; }' \

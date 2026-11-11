@@ -72,3 +72,6 @@ L_ISM_915='915-Sensoren · Wetterstationen'
 L_ISM_ORION='Wasserzähler (Badger ORION)'
 L_ISM_HOP='Beide Bänder abwechselnd (je 30 s)'
 L_ISM_PULSE='Unbekanntes Signal · Pulsanalyse'
+
+# Conversation scanner (ArchangeSDR, started by sdr-menu and the radio block)
+L_APP_CONVSCAN='ArchangeSDR · Gesprächs-Scanner'

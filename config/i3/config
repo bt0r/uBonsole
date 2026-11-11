@@ -125,6 +125,8 @@ assign [class="(?i)gqrx"] $ws3
 assign [class="(?i)sdr\+\+|sdrpp"] $ws3
 assign [class="(?i)satdump"] $ws3
 assign [class="^sdr-term$"] $ws3
+# Conversation scanner (ArchangeSDR; its former name SDRScanner when started as "sdrscanner")
+assign [class="(?i)archangesdr|sdrscanner"] $ws3
 # Audio decoders (WSJT-X windows have the class "WSJT-X")
 assign [class="(?i)^(wsjt-x|js8call|qsstv|fldigi)$"] $ws3
 

@@ -159,10 +159,18 @@ say "Terminal colors: $TERM_COLORS"
 declare -A DEPS=(
   [i3]=i3 [i3blocks]=i3blocks [rofi]=rofi [feh]=feh [maim]=maim [xdotool]=xdotool [xclip]=xclip
   [brightnessctl]=brightnessctl [wpctl]=wireplumber [nmcli]=network-manager [xrandr]=x11-xserver-utils
-  [xrdb]=x11-xserver-utils [i3-nagbar]=i3-wm [python3]=python3 [firefox]=firefox-esr
+  [xrdb]=x11-xserver-utils [i3-nagbar]=i3-wm [python3]=python3 [firefox]=firefox-esr [git]=git
 )
 MISSING=()
 for cmd in "${!DEPS[@]}"; do command -v "$cmd" >/dev/null 2>&1 || MISSING+=("${DEPS[$cmd]}"); done
+# Conversation scanner (ArchangeSDR, installed below): numpy, GTK 4 from Python, librtlsdr, desktop notifications
+python3 -c 'import numpy' 2>/dev/null || MISSING+=(python3-numpy)
+python3 -c 'import gi; gi.require_version("Gtk", "4.0")' 2>/dev/null || MISSING+=(python3-gi gir1.2-gtk-4.0)
+ldconfig -p 2>/dev/null | grep -q librtlsdr || MISSING+=(librtlsdr0)
+# notify-send plus a notification daemon (dunst starts on demand through D-Bus); without them the
+# scanner shows new active frequencies in its own window only
+command -v notify-send >/dev/null 2>&1 || MISSING+=(libnotify-bin)
+command -v dunst >/dev/null 2>&1 || MISSING+=(dunst)
 [ -x /usr/sbin/rfkill ] || MISSING+=(rfkill)
 # Read the font list once: "fc-list | grep -q" fails under pipefail when grep exits early
 FONTS=$(fc-list : family 2>/dev/null || true)
@@ -339,6 +347,29 @@ fi
 # --- SDR tools (optional) -----------------------------------------------------
 if [ -z "$SDR_TOOLS" ] && ask "Install the SDR tools (SDR++, SatDump, direwolf, acarsdec, dumpvdl2, auto_rx)? Takes a while." n; then SDR_TOOLS=1; fi
 [ "$SDR_TOOLS" = 1 ] && bash "$REPO/tools/install-sdr-tools.sh"
+
+# --- Conversation scanner (ArchangeSDR, separate repository) -----------------
+# https://github.com/bt0r/ArchangeSDR, installed for the user in ~/.local/bin/archangesdr. Taken from
+# ARCHANGESDR_DIR or a checkout next to uBonsole (../ArchangeSDR) when there is one, else cloned into
+# ~/.local/src/ArchangeSDR (asked once; a later reinstall updates that clone)
+ARCHANGESDR_URL=https://github.com/bt0r/ArchangeSDR.git
+ARCHANGESDR_SRC="$HOME/.local/src/ArchangeSDR"
+ARCHANGESDR_DIR=${ARCHANGESDR_DIR:-$REPO/../ArchangeSDR}
+if [ ! -x "$ARCHANGESDR_DIR/install.sh" ]; then
+  ARCHANGESDR_DIR=$ARCHANGESDR_SRC
+  if [ -d "$ARCHANGESDR_SRC/.git" ]; then
+    git -C "$ARCHANGESDR_SRC" pull -q --ff-only || say "ArchangeSDR: could not update $ARCHANGESDR_SRC, installing it as is"
+  elif [ ! -x "$HOME/.local/bin/archangesdr" ] && command -v git >/dev/null 2>&1 &&
+       ask "Install ArchangeSDR, the conversation scanner (cloned from GitHub)?" y; then
+    mkdir -p "$(dirname "$ARCHANGESDR_SRC")"
+    git clone -q --depth 1 "$ARCHANGESDR_URL" "$ARCHANGESDR_SRC" || say "ArchangeSDR: could not clone $ARCHANGESDR_URL"
+  fi
+fi
+if [ -x "$ARCHANGESDR_DIR/install.sh" ]; then
+  "$ARCHANGESDR_DIR/install.sh" >/dev/null && say "Conversation scanner (ArchangeSDR) installed"
+elif [ ! -x "$HOME/.local/bin/archangesdr" ]; then
+  say "Conversation scanner: clone $ARCHANGESDR_URL next to uBonsole and run ./install.sh again"
+fi
 
 # --- Reload -------------------------------------------------------------------
 if pgrep -x i3 >/dev/null && command -v i3-msg >/dev/null; then
