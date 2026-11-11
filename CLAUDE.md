@@ -87,9 +87,10 @@ Update `README.md` in the same commit whenever a change affects users:
 
 1. `bash -n` on every changed shell script; `python3 tools/gen-frequencies.py` if frequency data changed.
 2. Test the installer in a throwaway home, never on the real config, and stub `sudo` so it cannot
-   install packages:
+   install packages. Unset the XDG variables: the ArchangeSDR installer follows `XDG_DATA_HOME`, which
+   would otherwise still point to the real home:
    ```bash
-   HOME=$(mktemp -d) bash -c 'sudo() { return 1; }; export -f sudo; ./install.sh --lang en --region us --color blue --yes'
+   env -u XDG_DATA_HOME -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash -c 'sudo() { return 1; }; export -f sudo; ./install.sh --lang en --region us --color blue --yes'
    ```
    For a visual check on the uConsole, run the menus from that home (`HOME=... ~/.config/i3/scripts/sdr-menu`).
 3. When testing on the device over SSH, stop processes with `pkill -x <name>`, never `pkill -f
